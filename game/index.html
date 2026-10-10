@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ESP Racer</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='%23ff3b2f'/><path d='M14 38h36l-6-12H22z' fill='%23fff'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.min.js",
+        "three/addons/": "./vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- ===================== HUD ===================== -->
+  <div id="hud" class="hidden">
+    <div class="hud-panel hud-tl">
+      <div class="hud-row"><span class="hud-label">LAP</span><span id="hud-lap" class="hud-big">1/3</span></div>
+      <div class="hud-row"><span class="hud-label">TIME</span><span id="hud-time" class="hud-mono">0:00.000</span></div>
+      <div class="hud-row"><span class="hud-label">LAST</span><span id="hud-last" class="hud-mono dim">--</span></div>
+      <div class="hud-row"><span class="hud-label">BEST</span><span id="hud-best" class="hud-mono gold">--</span></div>
+    </div>
+    <div class="hud-panel hud-tr" id="hud-pos-panel">
+      <span class="hud-label">POS</span><span id="hud-pos" class="hud-huge">1</span><span id="hud-pos-total" class="hud-label">/4</span>
+    </div>
+    <canvas id="minimap" width="220" height="220"></canvas>
+    <canvas id="speedo" width="260" height="260"></canvas>
+    <div id="hud-message"></div>
+    <div id="countdown"></div>
+  </div>
+
+  <!-- Controller status chip (always visible) -->
+  <div id="conn-chip" title="Controller status">
+    <span class="dot"></span><span id="conn-chip-text">Keyboard</span>
+    <span class="steer-meter"><span id="chip-steer"></span></span>
+  </div>
+
+  <!-- ===================== MENUS ===================== -->
+  <div id="menus">
+    <section class="screen" id="screen-title">
+      <div class="logo">
+        <div class="afaq-badge"><img src="assets/afaq/afaq-mark-white.svg" alt="AFAQ"><span>AFAQ OPEN WEEK</span></div>
+        <div class="logo-small">ESP8266 TILT CONTROLLER</div>
+        <div class="logo-big">ESP<span>RACER</span></div>
+      </div>
+      <div class="menu">
+        <button class="mi" data-action="mode-race">Race</button>
+        <button class="mi" data-action="mode-trial">Time Trial</button>
+        <button class="mi" data-action="open-controller">Controller</button>
+        <button class="mi" data-action="open-settings">Settings</button>
+        <button class="mi" data-action="open-help">How to play</button>
+      </div>
+      <div class="hint" id="title-hint"></div>
+      <div class="afaq-credit"><img src="assets/afaq/afaq-mark-white.svg" alt="">AFAQ SCIENTIFIC CLUB</div>
+    </section>
+
+    <section class="screen" id="screen-setup">
+      <h2 id="setup-title">Race setup</h2>
+      <div class="menu wide">
+        <div class="mi sel" data-key="race.track"><span class="lbl">Track</span><span class="val"></span></div>
+        <div class="mi sel" data-key="race.time"><span class="lbl">Time of day</span><span class="val"></span></div>
+        <div class="mi sel" data-key="race.laps"><span class="lbl">Laps</span><span class="val"></span></div>
+        <div class="mi sel" data-key="race.opponents" id="sel-opponents"><span class="lbl">Opponents</span><span class="val"></span></div>
+        <div class="mi sel" data-key="car.color"><span class="lbl">Car color</span><span class="val"></span></div>
+        <button class="mi accent" data-action="start-race">Start</button>
+        <button class="mi" data-action="back">Back</button>
+      </div>
+      <div class="hint">Tilt or &larr; &rarr; to change &middot; stick or &uarr; &darr; to move &middot; click / Enter to select</div>
+    </section>
+
+    <section class="screen" id="screen-controller">
+      <h2>Controller</h2>
+      <div class="two-col">
+        <div class="col">
+          <div class="card">
+            <div class="card-title">Connection</div>
+            <div id="conn-status" class="status-line">Not connected (keyboard active)</div>
+            <div class="menu wide">
+              <button class="mi" data-action="connect-usb">Connect USB</button>
+              <div class="mi input-row"><span class="lbl">WiFi address</span><input id="wifi-host" type="text" spellcheck="false" placeholder="192.168.4.1"></div>
+              <button class="mi" data-action="connect-wifi">Connect WiFi</button>
+              <button class="mi" data-action="disconnect">Disconnect</button>
+              <button class="mi" data-action="open-flasher">Install firmware on the ESP8266</button>
+              <div class="mi sel" data-key="conn.auto"><span class="lbl">Auto-connect on start</span><span class="val"></span></div>
+            </div>
+            <div id="device-info" class="small-info"></div>
+          </div>
+          <div class="card" id="wifi-card">
+            <div class="card-title">Controller WiFi setup <span class="tag">needs USB</span></div>
+            <div class="menu wide">
+              <div class="mi sel" data-key="wifiSetup.mode"><span class="lbl">WiFi mode</span><span class="val"></span></div>
+              <div class="mi input-row"><span class="lbl">Home WiFi name</span><input id="wifi-ssid" type="text" spellcheck="false" placeholder="only for Home WiFi mode"></div>
+              <div class="mi input-row"><span class="lbl">Home WiFi password</span><input id="wifi-pass" type="password" placeholder="leave empty to keep"></div>
+              <button class="mi" data-action="wifi-apply">Send to controller</button>
+            </div>
+            <div class="small-info" id="wifi-setup-msg">Own hotspot: the controller creates WiFi "ESP-Racer" (password racer1234). Home WiFi: it joins your network.</div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-title">Live test</div>
+            <div class="live">
+              <div class="live-row"><span>Steer</span><div class="bar center"><i id="lv-steer"></i></div></div>
+              <div class="live-row"><span>Gas</span><div class="bar"><i id="lv-gas"></i></div></div>
+              <div class="live-row"><span>Brake</span><div class="bar red"><i id="lv-brake"></i></div></div>
+              <div class="live-row"><span>Button</span><div class="led" id="lv-btn"></div><span id="lv-raw" class="raw"></span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Tuning</div>
+            <div class="menu wide">
+              <button class="mi accent" data-action="calibrate">Calibrate (guided)</button>
+              <div class="mi sel" data-key="controls.steerAxis"><span class="lbl">Steering axis</span><span class="val"></span></div>
+              <div class="mi sel" data-key="controls.invertSteer"><span class="lbl">Invert steering</span><span class="val"></span></div>
+              <div class="mi sel" data-key="controls.invertThrottle"><span class="lbl">Invert stick</span><span class="val"></span></div>
+              <div class="mi sel" data-key="controls.tiltRange"><span class="lbl">Tilt for full lock</span><span class="val"></span></div>
+              <div class="mi sel" data-key="controls.steerCurve"><span class="lbl">Steering response</span><span class="val"></span></div>
+              <button class="mi" data-action="back">Back</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-settings">
+      <h2>Settings</h2>
+      <div class="menu wide">
+        <div class="mi sel" data-key="graphics.quality"><span class="lbl">Graphics quality</span><span class="val"></span></div>
+        <div class="mi sel" data-key="graphics.bloom"><span class="lbl">Glow effects</span><span class="val"></span></div>
+        <div class="mi sel" data-key="audio.volume"><span class="lbl">Volume</span><span class="val"></span></div>
+        <div class="mi sel" data-key="graphics.showFps"><span class="lbl">Show FPS</span><span class="val"></span></div>
+        <button class="mi" data-action="reset-records">Reset best laps</button>
+        <button class="mi" data-action="back">Back</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-help">
+      <h2>How to play</h2>
+      <div class="help-grid">
+        <div class="card">
+          <div class="card-title">ESP controller</div>
+          <table class="keys">
+            <tr><td>Tilt left / right</td><td>Steer</td></tr>
+            <tr><td>Stick up</td><td>Gas</td></tr>
+            <tr><td>Stick down</td><td>Brake, then reverse when stopped</td></tr>
+            <tr><td>Hold stick button</td><td>Nitro</td></tr>
+            <tr><td>Double-click stick button</td><td>Pause</td></tr>
+            <tr><td>Menus</td><td>Stick up/down to move, tilt to change, click to select</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">Keyboard</div>
+          <table class="keys">
+            <tr><td>&larr; &rarr; / A D</td><td>Steer</td></tr>
+            <tr><td>&uarr; / W</td><td>Gas</td></tr>
+            <tr><td>&darr; / S</td><td>Brake / reverse</td></tr>
+            <tr><td>Space / Shift</td><td>Nitro</td></tr>
+            <tr><td>Esc / P</td><td>Pause</td></tr>
+            <tr><td>C</td><td>Change camera</td></tr>
+            <tr><td>R</td><td>Reset car onto track</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">Tips</div>
+          <p>Nitro refills slowly on its own and faster while you drift. Brake before tight corners: the car slides if you carry too much speed. Run Calibrate once after wiring the controller.</p>
+        </div>
+      </div>
+      <div class="menu"><button class="mi" data-action="back">Back</button></div>
+    </section>
+
+    <section class="screen" id="screen-pause">
+      <h2>Paused</h2>
+      <div class="menu">
+        <button class="mi accent" data-action="resume">Resume</button>
+        <button class="mi" data-action="reset-car">Put car back on track</button>
+        <button class="mi" data-action="restart">Restart</button>
+        <button class="mi" data-action="quit">Quit to menu</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-results">
+      <h2 id="results-title">Finished</h2>
+      <table id="results-table"></table>
+      <div class="menu">
+        <button class="mi accent" data-action="restart">Race again</button>
+        <button class="mi" data-action="quit">Menu</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-calibrate">
+      <h2>Calibrate controller</h2>
+      <div class="card calib">
+        <div class="calib-step" id="calib-text"></div>
+        <div class="live">
+          <div class="live-row"><span>Roll</span><div class="bar center"><i id="cal-roll"></i></div></div>
+          <div class="live-row"><span>Pitch</span><div class="bar center"><i id="cal-pitch"></i></div></div>
+          <div class="live-row"><span>Stick</span><div class="bar center"><i id="cal-joy"></i></div></div>
+        </div>
+        <div class="hint">Press the stick button, Enter or click to continue &middot; Esc to cancel</div>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast"></div>
+  <div id="fps"></div>
+  <div id="loading"><div class="afaq-load"><img src="assets/afaq/afaq-mark-white.svg" alt="AFAQ"><div>LOADING&hellip;</div><small>AFAQ OPEN WEEK</small></div></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

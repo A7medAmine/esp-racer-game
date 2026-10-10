@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Install Controller Firmware</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@800&family=Rajdhani:wght@500;700&display=swap">
+  <script type="module" src="https://unpkg.com/esp-web-tools@10.1.0/dist/web/install-button.js?module"></script>
+  <style>
+    :root { --accent: #ff3b2f; --gold: #ffb020; --line: rgba(255,255,255,0.12); --dim: #9aa3b5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at top, #2a1410, #07080d 70%); color: #f2f4f8;
+      font: 500 18px Rajdhani, "Segoe UI", system-ui, sans-serif; display: grid; place-items: center; padding: 32px 16px; }
+    main { width: min(640px, 100%); background: rgba(12,14,24,0.9); border: 1px solid var(--line); padding: 28px; }
+    h1 { font: italic 800 28px Orbitron, sans-serif; margin: 0 0 6px; letter-spacing: 0.06em; }
+    h1 span { color: var(--accent); }
+    ol { line-height: 1.55; padding-left: 22px; }
+    li { margin-bottom: 8px; }
+    b { color: var(--gold); }
+    .note { color: var(--dim); font-size: 15px; border-left: 3px solid var(--line); padding-left: 12px; }
+    esp-web-install-button button[slot=activate] { font: 700 20px Rajdhani, sans-serif; letter-spacing: 0.1em; text-transform: uppercase;
+      background: var(--accent); color: #fff; border: 0; padding: 14px 28px; cursor: pointer; margin: 10px 0 18px; }
+    a { color: #38e1ff; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>INSTALL <span>FIRMWARE</span></h1>
+    <p>Put the controller firmware on your NodeMCU straight from the browser. No Arduino IDE needed.</p>
+    <ol>
+      <li>Plug the NodeMCU into this computer with a <b>data</b> USB cable (some cables only charge).</li>
+      <li>Close the game tab or press <b>Disconnect</b> there, so the USB port is free.</li>
+      <li>Click the button below, pick the port (often <b>CP2102</b> or <b>CH340</b>), then <b>Install</b>.</li>
+    </ol>
+    <esp-web-install-button manifest="manifest.json">
+      <button slot="activate">Connect &amp; install</button>
+      <span slot="unsupported">Your browser can't flash devices. Use <b>Chrome</b> or <b>Edge</b> on a computer.</span>
+      <span slot="not-allowed">This page must be opened from <b>http://localhost</b> (run start-game) or over https.</span>
+    </esp-web-install-button>
+    <p class="note">No port shows up? Install the USB driver for your board's chip:
+      <a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers" target="_blank" rel="noopener">CP2102</a> or
+      <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html" target="_blank" rel="noopener">CH340</a>.
+      If installing hangs on "Connecting", hold the <b>FLASH</b> button on the board while it starts.
+      This page needs internet once to load the installer.</p>
+    <p><a href="../">&larr; Back to the game</a></p>
+  </main>
+</body>
+</html>

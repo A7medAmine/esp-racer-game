@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="960" height="640" fill="#ffffff"/>
+  <text x="480" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#111">ESP Racer controller wiring (NodeMCU ESP8266)</text>
+
+  <!-- ===== Joystick module (KY-023) ===== -->
+  <g>
+    <rect x="40" y="160" width="150" height="230" rx="10" fill="#1f5fae"/>
+    <circle cx="105" cy="250" r="42" fill="#222"/>
+    <circle cx="105" cy="250" r="26" fill="#444"/>
+    <text x="105" y="335" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">Joystick</text>
+    <text x="105" y="354" text-anchor="middle" font-size="12" fill="#dfe8ff">KY-023</text>
+    <g font-size="12" fill="#fff" text-anchor="end">
+      <text x="172" y="204">GND</text>
+      <text x="172" y="234">+5V</text>
+      <text x="172" y="264">VRx</text>
+      <text x="172" y="294">VRy</text>
+      <text x="172" y="324">SW</text>
+    </g>
+    <g fill="#d9b44a"><circle cx="190" cy="200" r="5"/><circle cx="190" cy="230" r="5"/><circle cx="190" cy="260" r="5"/><circle cx="190" cy="290" r="5"/><circle cx="190" cy="320" r="5"/></g>
+  </g>
+
+  <!-- ===== NodeMCU ===== -->
+  <g>
+    <rect x="330" y="60" width="200" height="470" rx="8" fill="#222831"/>
+    <rect x="385" y="70" width="90" height="60" rx="3" fill="#9aa3ad"/>
+    <text x="430" y="105" text-anchor="middle" font-size="11" fill="#222">ESP-12E</text>
+    <rect x="405" y="505" width="50" height="30" rx="3" fill="#b8b8b8"/>
+    <text x="430" y="560" text-anchor="middle" font-size="12" fill="#555">micro USB</text>
+    <text x="430" y="300" text-anchor="middle" font-size="16" font-weight="700" fill="#fff">NodeMCU</text>
+    <text x="430" y="320" text-anchor="middle" font-size="12" fill="#c8ced6">ESP8266</text>
+    <g font-size="12" fill="#e6e6e6">
+      <text x="352" y="94">A0</text><text x="352" y="122">RSV</text><text x="352" y="150">RSV</text><text x="352" y="178">SD3</text>
+      <text x="352" y="206">SD2</text><text x="352" y="234">SD1</text><text x="352" y="262">CMD</text><text x="352" y="290">SD0</text>
+      <text x="352" y="318">CLK</text><text x="352" y="346">GND</text><text x="352" y="374">3V3</text><text x="352" y="402">EN</text>
+      <text x="352" y="430">RST</text><text x="352" y="458">GND</text><text x="352" y="486">Vin</text>
+    </g>
+    <g font-size="12" fill="#e6e6e6" text-anchor="end">
+      <text x="508" y="94">D0</text><text x="508" y="122">D1</text><text x="508" y="150">D2</text><text x="508" y="178">D3</text>
+      <text x="508" y="206">D4</text><text x="508" y="234">3V3</text><text x="508" y="262">GND</text><text x="508" y="290">D5</text>
+      <text x="508" y="318">D6</text><text x="508" y="346">D7</text><text x="508" y="374">D8</text><text x="508" y="402">RX</text>
+      <text x="508" y="430">TX</text><text x="508" y="458">GND</text><text x="508" y="486">3V3</text>
+    </g>
+    <g fill="#d9b44a">
+      <circle cx="340" cy="90" r="5"/><circle cx="340" cy="342" r="5"/><circle cx="340" cy="370" r="5"/>
+      <circle cx="520" cy="118" r="5"/><circle cx="520" cy="146" r="5"/><circle cx="520" cy="230" r="5"/>
+      <circle cx="520" cy="258" r="5"/><circle cx="520" cy="286" r="5"/>
+    </g>
+  </g>
+
+  <!-- ===== ADXL345 module (GY-291) ===== -->
+  <g>
+    <rect x="740" y="90" width="170" height="260" rx="10" fill="#6b2a8a"/>
+    <rect x="815" y="185" width="40" height="40" fill="#111"/>
+    <text x="835" y="260" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">ADXL345</text>
+    <text x="835" y="279" text-anchor="middle" font-size="12" fill="#ead6f5">GY-291</text>
+    <g font-size="12" fill="#fff">
+      <text x="758" y="114">GND</text><text x="758" y="142">VCC</text><text x="758" y="170">CS</text><text x="758" y="198">INT1</text>
+      <text x="758" y="226">INT2</text><text x="758" y="254">SDO</text><text x="758" y="282">SDA</text><text x="758" y="310">SCL</text>
+    </g>
+    <g fill="#d9b44a">
+      <circle cx="740" cy="110" r="5"/><circle cx="740" cy="138" r="5"/><circle cx="740" cy="166" r="5"/><circle cx="740" cy="194" r="5"/>
+      <circle cx="740" cy="222" r="5"/><circle cx="740" cy="250" r="5"/><circle cx="740" cy="278" r="5"/><circle cx="740" cy="306" r="5"/>
+    </g>
+  </g>
+
+  <!-- ===== Wires ===== -->
+  <g fill="none" stroke-width="4" stroke-linecap="round">
+    <!-- Joystick -->
+    <path d="M190 200 C 270 200, 260 342, 340 342" stroke="#111"/>          <!-- GND -> GND -->
+    <path d="M190 230 C 280 230, 250 370, 340 370" stroke="#e02424"/>       <!-- +5V -> 3V3 -->
+    <path d="M190 290 C 290 290, 240 90, 340 90" stroke="#16a34a"/>         <!-- VRy -> A0 -->
+    <path d="M190 320 C 260 320, 250 600, 430 600 C 620 600, 600 286, 520 286" stroke="#f59e0b"/> <!-- SW -> D5 -->
+    <!-- ADXL345 -->
+    <path d="M520 230 C 640 230, 620 138, 740 138" stroke="#e02424"/>       <!-- 3V3 -> VCC -->
+    <path d="M520 258 C 650 258, 610 110, 740 110" stroke="#111"/>          <!-- GND -> GND -->
+    <path d="M520 146 C 640 146, 620 278, 740 278" stroke="#2563eb"/>       <!-- D2 -> SDA -->
+    <path d="M520 118 C 660 118, 600 306, 740 306" stroke="#0891b2"/>       <!-- D1 -> SCL -->
+    <!-- Jumpers on the ADXL345: CS -> VCC (I2C mode), SDO -> GND (address 0x53) -->
+    <path d="M740 166 C 712 166, 712 138, 740 138" stroke="#e02424" stroke-width="3" stroke-dasharray="6 4"/>
+    <path d="M740 250 C 690 250, 690 110, 740 110" stroke="#111" stroke-width="3" stroke-dasharray="6 4"/>
+  </g>
+
+  <!-- ===== Legend ===== -->
+  <g font-size="13" fill="#222">
+    <rect x="40" y="420" width="250" height="180" rx="8" fill="#f4f6fa" stroke="#d5dae3"/>
+    <text x="56" y="444" font-weight="700">Legend</text>
+    <line x1="56" y1="464" x2="86" y2="464" stroke="#e02424" stroke-width="4"/><text x="96" y="468">3.3 V power</text>
+    <line x1="56" y1="486" x2="86" y2="486" stroke="#111" stroke-width="4"/><text x="96" y="490">Ground</text>
+    <line x1="56" y1="508" x2="86" y2="508" stroke="#2563eb" stroke-width="4"/><text x="96" y="512">SDA (I2C data) D2</text>
+    <line x1="56" y1="530" x2="86" y2="530" stroke="#0891b2" stroke-width="4"/><text x="96" y="534">SCL (I2C clock) D1</text>
+    <line x1="56" y1="552" x2="86" y2="552" stroke="#16a34a" stroke-width="4"/><text x="96" y="556">Joystick Y to A0</text>
+    <line x1="56" y1="574" x2="86" y2="574" stroke="#f59e0b" stroke-width="4"/><text x="96" y="578">Joystick button to D5</text>
+  </g>
+  <g font-size="13" fill="#b42318">
+    <text x="600" y="400" font-weight="700">Important</text>
+    <text x="600" y="422">Joystick +5V pin goes to 3V3, never 5V/Vin.</text>
+    <text x="600" y="442">VRx stays unconnected (one analog pin only).</text>
+    <text x="600" y="462">Dashed: short jumpers on the ADXL345 board.</text>
+  </g>
+</svg>
