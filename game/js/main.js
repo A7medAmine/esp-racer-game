@@ -142,6 +142,9 @@ async function handleAction(action) {
     case 'disconnect':
       await input.disconnect();
       break;
+    case 'reconnect':
+      await reconnect();
+      break;
     case 'open-flasher':
       await input.disconnect(); // the flasher needs the USB port
       window.open('flash/', '_blank');
@@ -188,6 +191,7 @@ function startRace() {
 function pause() {
   state = 'paused';
   menus.show('screen-pause', { reset: true });
+  refreshPauseStatus();
 }
 
 function resume() {
@@ -285,9 +289,41 @@ async function connectWifi() {
   }
 }
 
+// Reconnects over the last-used link (USB or WiFi), e.g. from the pause menu after a cable bump.
+async function reconnect() {
+  const kind = input.connected ? input.kind : settings.conn.last;
+  if (kind === 'wifi') {
+    wifiHostInput.value = settings.conn.wifiHost;
+    await connectWifi();
+    return;
+  }
+  if (kind !== 'usb') {
+    toast('No controller used yet: connect it once from the Controller menu.', { error: true });
+    return;
+  }
+  try {
+    // Reuse a port the browser already granted; only show the picker if there is none.
+    if (!(await input.connectUsb({ silent: true }))) await connectUsb();
+  } catch (err) {
+    toast(err.message, { error: true, ms: 6000 });
+  }
+}
+
+function refreshPauseStatus() {
+  const el = document.getElementById('pause-conn');
+  if (input.connected) {
+    el.textContent = `Controller connected via ${input.kind === 'usb' ? 'USB' : 'WiFi'}`;
+    el.className = 'status-line ok';
+  } else {
+    el.textContent = 'Controller not connected (keyboard active)';
+    el.className = 'status-line warn';
+  }
+}
+
 input.on('status', ({ connected, message }) => {
   toast(message, { error: !connected && message !== 'Disconnected' });
   refreshControllerScreen();
+  refreshPauseStatus();
 });
 input.on('info', (info) => {
   if (input.kind === 'usb' && info.ip && info.wifiState !== 'off') {
