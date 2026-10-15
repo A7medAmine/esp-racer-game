@@ -54,15 +54,17 @@ page (hotel/campus portals) won't work: use the hotspot mode there.
 
 **Controller > Calibrate (guided)**:
 
-1. Hold the controller level, the way you'll drive. Press the stick button.
-2. Tilt fully to the right. Press the stick button.
-3. Push the stick up and hold it.
+1. Hold the controller level, the way you'll drive. Press the nitro button.
+2. Tilt fully to the right. Press the nitro button.
+3. Push the stick up and hold it. (Skipped when *Gas / brake* is set to **Paddles**: paddles need no calibration.)
 
 The game works out the steering axis, the direction, how much tilt means full lock, and which stick
 direction is "gas". Settings are saved in the browser. Fine-tune under **Tuning**:
 
 | Setting | What it does |
 |---|---|
+| Gas / brake | **Joystick** = the stick (paddles also work if wired). **Paddles** = only the gas/brake paddles; pick this when no joystick is wired. |
+| Vibration | Off / Low / High. **Test vibration** gives a short buzz. Needs firmware 1.1 and the motor wired. |
 | Steering axis | Roll = tilt sideways like a wheel. Pitch = tilt forward/back. |
 | Invert steering / stick | Flip directions. |
 | Tilt for full lock | Smaller = more sensitive. |
@@ -82,6 +84,7 @@ They also work over the WebSocket.
 | `PING` | Replies `OK PONG` |
 | `CALJOY` | Re-measure the stick center (keep it released) |
 | `RATE <10-100>` | Data frames per second (default 60) |
+| `VIB <0-100> [ms]` | Run the vibration motor at that strength for `ms` (default 200, max 2000). No reply on success. Firmware 1.1+ |
 | `WIFI MODE OFF\|AP\|STA` | USB only / own hotspot / join home WiFi |
 | `WIFI SSID <name>` | Home WiFi name (spaces allowed) |
 | `WIFI PASS <password>` | Home WiFi password |

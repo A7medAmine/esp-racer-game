@@ -40,13 +40,16 @@ Each track can be raced at **Day**, **Sunset** or **Night** (headlights, glowing
 | Action | ESP controller | Keyboard |
 |---|---|---|
 | Steer | Tilt left / right | Arrow keys or A / D |
-| Gas | Stick up | Up or W |
-| Brake, then reverse when stopped | Stick down | Down or S |
-| Nitro | Hold the stick button | Space or Shift |
-| Pause | Double-click the stick button | Esc or P |
+| Gas | Stick up, or hold the gas paddle | Up or W |
+| Brake, then reverse when stopped | Stick down, or hold the brake paddle | Down or S |
+| Nitro | Hold the nitro button | Space or Shift |
+| Pause | Double-click the nitro button | Esc or P |
 | Camera | | C |
 | Back on track | Pause > Put car back on track | R |
-| Menus | Stick up/down to move, tilt to change values, click to select | Arrows, Enter, Esc, or mouse |
+| Menus | Stick up/down (or brake/gas paddle) to move, tilt to change values, nitro button to select | Arrows, Enter, Esc, or mouse |
+
+With a vibration motor wired (firmware 1.1+), the controller buzzes on crashes (harder hit = stronger, longer
+buzz), when nitro kicks in, while it burns, on grass, on each countdown light, on GO and at the finish.
 
 Driving tips: the car slides when you take a corner too fast (tire smoke, lost speed), so brake before
 tight turns. Nitro refills slowly by itself and faster while drifting. Grass slows you down. Driving the
@@ -74,6 +77,7 @@ game/
   js/ai.js              AI drivers
   js/camera.js          chase / far / hood cameras, showroom orbit
   js/effects.js         smoke, dust, nitro flames, sparks, skid marks
+  js/input/haptics.js   controller vibration: mixes pulses and rumbles into VIB commands
   js/audio.js           engine, effects and announcer (plays the recordings in assets/audio/)
   js/hud.js             speedometer, minimap, lap panel
   js/ui.js              menu navigation

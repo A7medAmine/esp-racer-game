@@ -4,7 +4,7 @@
 // or with serial commands (see docs/protocol.md), no re-flashing needed.
 #pragma once
 
-#define FW_VERSION "1.0.0"
+#define FW_VERSION "1.1.0"
 
 // ---------------------------------------------------------------------------
 // Pins (NodeMCU / Wemos D1 mini labels)
@@ -14,8 +14,17 @@
 #define PIN_SCL D1          // GPIO5
 // Joystick: only the Y axis is used (ESP8266 has a single analog input).
 #define PIN_JOY_Y A0
-// Joystick push button (SW). Pressed = connected to GND. Internal pull-up is used.
+// Nitro button: the joystick push button (SW) and/or a separate button on the
+// breadboard, wired in parallel. Pressed = connected to GND. Internal pull-up is used.
 #define PIN_JOY_BTN D5      // GPIO14
+// Gas and brake paddles (push buttons or lever microswitches). Pressed = connected
+// to GND, internal pull-up. Unwired pins simply read "not pressed", so the same
+// firmware works with or without paddles.
+#define PIN_GAS D6          // GPIO12
+#define PIN_BRAKE D7        // GPIO13
+// Vibration motor (from a phone), driven through an NPN transistor, never directly:
+// D0 -> 1k -> transistor base. See docs/hardware.md.
+#define PIN_VIBRATION D0    // GPIO16
 // On-board blue LED (active LOW) used as a status light.
 #define PIN_STATUS_LED D4   // GPIO2
 #define STATUS_LED_ACTIVE_LOW 1
@@ -32,6 +41,12 @@
 #define JOY_DEADZONE 0.06f        // fraction of travel ignored around center
 #define JOY_SMOOTHING 0.5f        // 0 = no smoothing, 0.9 = very smooth
 #define BTN_DEBOUNCE_MS 15
+
+// ---------------------------------------------------------------------------
+// Vibration motor
+// ---------------------------------------------------------------------------
+#define VIB_MAX_MS 2000           // longest pulse one VIB command can ask for
+#define VIB_DEFAULT_MS 200        // used when VIB has no duration
 
 // ---------------------------------------------------------------------------
 // Tilt tuning

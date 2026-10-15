@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1000" height="500" fill="#ffffff"/>
+  <text x="500" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#111">Optional extras: paddles, nitro button, vibration motor (firmware 1.1+)</text>
+
+  <defs>
+    <!-- Ground symbol, drawn at the end of a wire -->
+    <g id="gnd" stroke="#111" stroke-width="3" stroke-linecap="round">
+      <line x1="0" y1="0" x2="0" y2="14"/>
+      <line x1="-12" y1="14" x2="12" y2="14"/>
+      <line x1="-7" y1="20" x2="7" y2="20"/>
+      <line x1="-2" y1="26" x2="2" y2="26"/>
+    </g>
+    <!-- Push button between x=0 and x=70 on the wire's line -->
+    <g id="btn" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round">
+      <circle cx="10" cy="0" r="4" fill="#fff"/>
+      <circle cx="60" cy="0" r="4" fill="#fff"/>
+      <line x1="4" y1="-14" x2="66" y2="-14"/>
+      <line x1="35" y1="-14" x2="35" y2="-26"/>
+      <line x1="25" y1="-26" x2="45" y2="-26"/>
+    </g>
+  </defs>
+
+  <!-- ===== NodeMCU (right header, pins in their real order) ===== -->
+  <g>
+    <rect x="40" y="70" width="160" height="300" rx="8" fill="#222831"/>
+    <text x="90" y="215" text-anchor="middle" font-size="16" font-weight="700" fill="#fff" transform="rotate(-90 90 215)">NodeMCU</text>
+    <g font-size="13" fill="#e6e6e6" text-anchor="end">
+      <text x="186" y="104">D0</text><text x="186" y="154">3V3</text><text x="186" y="194">GND</text>
+      <text x="186" y="244">D5</text><text x="186" y="294">D6</text><text x="186" y="344">D7</text>
+    </g>
+    <g fill="#d9b44a">
+      <circle cx="200" cy="100" r="5"/><circle cx="200" cy="150" r="5"/><circle cx="200" cy="190" r="5"/>
+      <circle cx="200" cy="240" r="5"/><circle cx="200" cy="290" r="5"/><circle cx="200" cy="340" r="5"/>
+    </g>
+  </g>
+
+  <g fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 3V3 and GND of the board -->
+    <path d="M200 150 H245" stroke="#e02424"/>
+    <path d="M200 190 H245" stroke="#111"/>
+    <!-- Buttons -->
+    <path d="M200 240 H330" stroke="#f59e0b"/>
+    <path d="M400 240 H440" stroke="#111"/>
+    <path d="M200 290 H330" stroke="#16a34a"/>
+    <path d="M400 290 H440" stroke="#111"/>
+    <path d="M200 340 H330" stroke="#b42318"/>
+    <path d="M400 340 H440" stroke="#111"/>
+    <!-- D0 to the resistor -->
+    <path d="M200 100 H640 V330 H650" stroke="#7c3aed"/>
+    <path d="M698 330 H720" stroke="#7c3aed"/>
+    <!-- Transistor -->
+    <path d="M720 312 V348" stroke="#111" stroke-width="4"/>
+    <path d="M720 322 L745 302 V270" stroke="#111"/>
+    <path d="M720 338 L745 358 V390" stroke="#111"/>
+    <!-- Motor and diode -->
+    <path d="M745 120 V192" stroke="#e02424"/>
+    <path d="M745 248 V270 H820 V234" stroke="#111"/>
+    <path d="M745 160 H820 V200" stroke="#e02424"/>
+    <!-- Capacitor -->
+    <path d="M820 160 H920 V296" stroke="#e02424"/>
+    <path d="M920 312 V340" stroke="#111"/>
+  </g>
+  <!-- Wire end symbols -->
+  <use href="#gnd" x="245" y="190"/>
+  <use href="#gnd" x="440" y="240"/>
+  <use href="#gnd" x="440" y="290"/>
+  <use href="#gnd" x="440" y="340"/>
+  <use href="#gnd" x="745" y="390"/>
+  <use href="#gnd" x="920" y="340"/>
+  <use href="#btn" x="330" y="240"/>
+  <use href="#btn" x="330" y="290"/>
+  <use href="#btn" x="330" y="340"/>
+  <g font-size="13" font-weight="700" fill="#e02424">
+    <text x="252" y="155">3V3</text>
+    <text x="745" y="113" text-anchor="middle">3V3</text>
+  </g>
+  <g fill="#111">
+    <circle cx="745" cy="160" r="4.5"/><circle cx="745" cy="270" r="4.5"/><circle cx="820" cy="160" r="4.5"/>
+  </g>
+
+  <!-- Button labels -->
+  <g font-size="13" fill="#222">
+    <text x="470" y="236" font-weight="700">Nitro button (D5)</text>
+    <text x="470" y="252" fill="#666" font-size="12">in parallel with joystick SW</text>
+    <text x="470" y="294" font-weight="700">Gas paddle (D6)</text>
+    <text x="470" y="344" font-weight="700">Brake paddle (D7)</text>
+  </g>
+
+  <!-- Resistor -->
+  <rect x="650" y="320" width="48" height="20" fill="#fff" stroke="#111" stroke-width="3"/>
+  <text x="674" y="362" text-anchor="middle" font-size="13" fill="#222">1 kΩ</text>
+  <!-- Transistor details -->
+  <path d="M745 358 L733 356 L739 347 Z" fill="#111"/>
+  <circle cx="735" cy="330" r="30" fill="none" stroke="#111" stroke-width="2"/>
+  <g font-size="11" fill="#666">
+    <text x="708" y="308">B</text><text x="752" y="292">C</text><text x="752" y="378">E</text>
+  </g>
+  <text x="770" y="324" font-size="13" font-weight="700" fill="#222">NPN</text>
+  <text x="770" y="340" font-size="12" fill="#444">2N2222 / S8050 / BC337</text>
+
+  <!-- Motor -->
+  <circle cx="745" cy="220" r="28" fill="#f4f6fa" stroke="#111" stroke-width="3"/>
+  <text x="745" y="227" text-anchor="middle" font-size="20" font-weight="700" fill="#111">M</text>
+  <text x="758" y="188" font-size="14" font-weight="700" fill="#e02424">+</text>
+  <text x="758" y="262" font-size="16" font-weight="700" fill="#111">−</text>
+  <text x="762" y="140" font-size="13" font-weight="700" fill="#222">Phone vibration motor</text>
+
+  <!-- Diode: anode at the bottom (motor −), cathode bar at the top (3V3) -->
+  <path d="M808 234 H832 L820 204 Z" fill="#111"/>
+  <line x1="806" y1="202" x2="834" y2="202" stroke="#111" stroke-width="4"/>
+  <text x="838" y="216" font-size="12" font-weight="700" fill="#222">1N4148</text>
+  <text x="838" y="231" font-size="11" fill="#444">stripe to 3V3</text>
+
+  <!-- Capacitor -->
+  <line x1="902" y1="298" x2="938" y2="298" stroke="#111" stroke-width="4"/>
+  <line x1="902" y1="310" x2="938" y2="310" stroke="#111" stroke-width="4"/>
+  <text x="896" y="296" text-anchor="end" font-size="14" font-weight="700" fill="#e02424">+</text>
+  <text x="944" y="292" font-size="12" font-weight="700" fill="#222">100 µF</text>
+
+  <!-- Notes -->
+  <g font-size="13" fill="#222">
+    <rect x="40" y="400" width="600" height="84" rx="8" fill="#f4f6fa" stroke="#d5dae3"/>
+    <text x="56" y="424">Every ground symbol is any NodeMCU GND pin. Buttons need no resistors (internal pull-ups).</text>
+    <text x="56" y="446">Lever microswitches make good paddles: use the COM and NO legs.</text>
+    <text x="56" y="468">Game: Controller &gt; Tuning &gt; Gas / brake = Paddles when no joystick is wired.</text>
+  </g>
+  <g font-size="13" fill="#b42318">
+    <text x="680" y="430" font-weight="700">Important</text>
+    <text x="680" y="452">Never wire the motor straight to D0:</text>
+    <text x="680" y="472">it needs the transistor and the diode.</text>
+  </g>
+</svg>

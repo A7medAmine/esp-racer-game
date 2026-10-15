@@ -112,13 +112,16 @@
               <div class="live-row"><span>Steer</span><div class="bar center"><i id="lv-steer"></i></div></div>
               <div class="live-row"><span>Gas</span><div class="bar"><i id="lv-gas"></i></div></div>
               <div class="live-row"><span>Brake</span><div class="bar red"><i id="lv-brake"></i></div></div>
-              <div class="live-row"><span>Button</span><div class="led" id="lv-btn"></div><span id="lv-raw" class="raw"></span></div>
+              <div class="live-row"><span>Nitro</span><div class="led" id="lv-btn"></div><span id="lv-raw" class="raw"></span></div>
             </div>
           </div>
           <div class="card">
             <div class="card-title">Tuning</div>
             <div class="menu wide">
               <button class="mi accent" data-action="calibrate">Calibrate (guided)</button>
+              <div class="mi sel" data-key="controls.layout"><span class="lbl">Gas / brake</span><span class="val"></span></div>
+              <div class="mi sel" data-key="controls.haptics"><span class="lbl">Vibration</span><span class="val"></span></div>
+              <button class="mi" data-action="test-vibration">Test vibration</button>
               <div class="mi sel" data-key="controls.steerAxis"><span class="lbl">Steering axis</span><span class="val"></span></div>
               <div class="mi sel" data-key="controls.invertSteer"><span class="lbl">Invert steering</span><span class="val"></span></div>
               <div class="mi sel" data-key="controls.invertThrottle"><span class="lbl">Invert stick</span><span class="val"></span></div>
@@ -151,11 +154,11 @@
           <div class="card-title">ESP controller</div>
           <table class="keys">
             <tr><td>Tilt left / right</td><td>Steer</td></tr>
-            <tr><td>Stick up</td><td>Gas</td></tr>
-            <tr><td>Stick down</td><td>Brake, then reverse when stopped</td></tr>
-            <tr><td>Hold stick button</td><td>Nitro</td></tr>
-            <tr><td>Double-click stick button</td><td>Pause</td></tr>
-            <tr><td>Menus</td><td>Stick up/down to move, tilt to change, click to select</td></tr>
+            <tr><td>Stick up / gas paddle</td><td>Gas</td></tr>
+            <tr><td>Stick down / brake paddle</td><td>Brake, then reverse when stopped</td></tr>
+            <tr><td>Hold nitro button</td><td>Nitro</td></tr>
+            <tr><td>Double-click nitro button</td><td>Pause</td></tr>
+            <tr><td>Menus</td><td>Stick or paddles to move (brake = up, gas = down), tilt to change, nitro to select</td></tr>
           </table>
         </div>
         <div class="card">
@@ -207,9 +210,9 @@
         <div class="live">
           <div class="live-row"><span>Roll</span><div class="bar center"><i id="cal-roll"></i></div></div>
           <div class="live-row"><span>Pitch</span><div class="bar center"><i id="cal-pitch"></i></div></div>
-          <div class="live-row"><span>Stick</span><div class="bar center"><i id="cal-joy"></i></div></div>
+          <div class="live-row" id="cal-joy-row"><span>Stick</span><div class="bar center"><i id="cal-joy"></i></div></div>
         </div>
-        <div class="hint">Press the stick button, Enter or click to continue &middot; Esc to cancel</div>
+        <div class="hint">Press the nitro button, Enter or click to continue &middot; Esc to cancel</div>
       </div>
     </section>
   </div>

@@ -159,6 +159,7 @@ export class Race {
       if (count !== this.lastCount && t < COUNTDOWN) {
         this.lastCount = count;
         this.hud.countdown(String(3 - count));
+        this.events.push({ type: 'count' });
         if (!this.audio.say(String(3 - count))) this.audio.beep(520, 0.22, 0.22);
       }
       this.track.setStartLights(Math.min(5, Math.floor((t / COUNTDOWN) * 5) + 1));
@@ -168,6 +169,7 @@ export class Race {
         this.state = 'racing';
         this.track.setStartLights(5, true);
         this.hud.countdown('GO!');
+        this.events.push({ type: 'go' });
         if (!this.audio.say('go')) this.audio.beep(1040, 0.5, 0.3);
         setTimeout(() => this.hud.countdown(''), 900);
         for (const car of this.cars) car.lapStart = 0;
@@ -213,6 +215,7 @@ export class Race {
         if (car === p && car.impact > 4) {
           this.audio.impact(car.impact);
           this.camera.addShake(Math.min(1, car.impact / 20));
+          this.events.push({ type: 'impact', strength: car.impact });
         }
         car.impact = 0;
       }
