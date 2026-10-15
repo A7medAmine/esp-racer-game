@@ -9,6 +9,9 @@ const STALE_MS = 500;
 const DOUBLE_TAP_MS = 380;
 const MENU_JOY_THRESHOLD = 0.55;
 const MENU_TILT_THRESHOLD = 0.5;
+// Paddles are on/off buttons; ramping them makes a press feel like a quick pedal push, not a jolt.
+const PEDAL_PRESS_RATE = 8; // full travel in 0.125 s
+const PEDAL_RELEASE_RATE = 16;
 
 class Emitter {
   constructor() {
@@ -26,7 +29,7 @@ export class InputManager extends Emitter {
   constructor() {
     super();
     this.transport = null;
-    this.device = { roll: 0, pitch: 0, joy: 0, button: false, sensorOk: true, lastData: 0, frames: 0 };
+    this.device = { roll: 0, pitch: 0, joy: 0, button: false, gas: false, brake: false, sensorOk: true, lastData: 0, frames: 0 };
     this.info = null;
     this.keys = new Set();
     this.queue = []; // pending discrete events: 'press' | 'release' | key names
@@ -34,6 +37,7 @@ export class InputManager extends Emitter {
     this.kbSteer = 0;
     this.navRepeat = {};
     for (const d of ['up', 'down', 'left', 'right']) this.navRepeat[d] = { held: false, timer: 0 };
+    this.pedal = { gas: 0, brake: 0 }; // ramped paddle values 0..1
     this.drive = { steer: 0, throttle: 0, brake: 0, nitro: false };
     this.setupKeyboard();
   }
@@ -47,6 +51,13 @@ export class InputManager extends Emitter {
   }
   get kind() {
     return this.transport?.kind ?? 'keyboard';
+  }
+  // Firmware 1.1+ reports what it supports; older firmware has no gas/brake paddles or vibration.
+  has(cap) {
+    return !!this.info?.caps?.includes(cap);
+  }
+  get pedalLayout() {
+    return settings.controls.layout === 'pedals';
   }
 
   makeHandlers() {
@@ -123,6 +134,8 @@ export class InputManager extends Emitter {
       d.pitch = msg.pitch;
       d.joy = msg.joy;
       d.button = msg.button;
+      d.gas = msg.gas;
+      d.brake = msg.brake;
       d.sensorOk = msg.sensorOk;
       d.lastData = performance.now();
       d.frames++;
@@ -167,7 +180,16 @@ export class InputManager extends Emitter {
   }
 
   stick() {
+    if (this.pedalLayout) return 0; // no stick wired: A0 floats and reads noise
     return settings.controls.invertThrottle ? -this.device.joy : this.device.joy;
+  }
+
+  updatePedals(dt, active) {
+    for (const k of ['gas', 'brake']) {
+      const target = active && this.device[k] ? 1 : 0;
+      const rate = target > this.pedal[k] ? PEDAL_PRESS_RATE : PEDAL_RELEASE_RATE;
+      this.pedal[k] += Math.max(-rate * dt, Math.min(rate * dt, target - this.pedal[k]));
+    }
   }
 
   // Call once per frame. `mode` is 'menu' or 'race'. Returns discrete events.
@@ -207,12 +229,12 @@ export class InputManager extends Emitter {
     }
     this.queue.length = 0;
 
-    // Analog menu navigation with auto-repeat.
+    // Analog menu navigation with auto-repeat. Paddles: brake = previous item, gas = next item.
     if (mode !== 'race' && active) {
       const stick = this.stick();
       const tilt = this.tiltSteer();
-      this.navAxis('up', stick > MENU_JOY_THRESHOLD, dt, events);
-      this.navAxis('down', stick < -MENU_JOY_THRESHOLD, dt, events);
+      this.navAxis('up', stick > MENU_JOY_THRESHOLD || this.device.brake, dt, events);
+      this.navAxis('down', stick < -MENU_JOY_THRESHOLD || this.device.gas, dt, events);
       this.navAxis('left', tilt < -MENU_TILT_THRESHOLD, dt, events);
       this.navAxis('right', tilt > MENU_TILT_THRESHOLD, dt, events);
     }
@@ -224,12 +246,14 @@ export class InputManager extends Emitter {
 
     const devSteer = active ? this.tiltSteer() : 0;
     const devStick = active ? this.stick() : 0;
+    this.updatePedals(dt, active);
     const kbGas = this.key('arrowup', 'w') ? 1 : 0;
     const kbBrake = this.key('arrowdown', 's') ? 1 : 0;
 
+    // Stick and paddles are merged: unwired paddle pins always read "not pressed".
     this.drive.steer = Math.max(-1, Math.min(1, devSteer + this.kbSteer));
-    this.drive.throttle = Math.max(kbGas, Math.max(0, devStick));
-    this.drive.brake = Math.max(kbBrake, Math.max(0, -devStick));
+    this.drive.throttle = Math.max(kbGas, Math.max(0, devStick), this.pedal.gas);
+    this.drive.brake = Math.max(kbBrake, Math.max(0, -devStick), this.pedal.brake);
     this.drive.nitro = this.key(' ', 'shift') || (active && this.device.button);
     return events;
   }

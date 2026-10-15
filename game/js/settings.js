@@ -35,6 +35,15 @@ export const OPTIONS = {
     { value: 'roll', label: 'Roll (side tilt)' },
     { value: 'pitch', label: 'Pitch (fwd tilt)' },
   ],
+  'controls.layout': [
+    { value: 'joystick', label: 'Joystick' },
+    { value: 'pedals', label: 'Paddles' },
+  ],
+  'controls.haptics': [
+    { value: 0, label: 'Off' },
+    { value: 0.6, label: 'Low' },
+    { value: 1, label: 'High' },
+  ],
   'controls.invertSteer': onOff(),
   'controls.invertThrottle': onOff(),
   'controls.tiltRange': [15, 20, 25, 30, 35, 40, 50, 60].map((n) => ({ value: n, label: `${n}°` })),
@@ -78,6 +87,10 @@ const DEFAULTS = {
   car: { color: 0 },
   conn: { auto: true, wifiHost: '192.168.4.1', last: 'none' },
   controls: {
+    // 'joystick': stick for gas/brake (paddles also work if wired).
+    // 'pedals': gas/brake paddles only, the stick input is ignored (A0 floats when no stick is wired).
+    layout: 'joystick',
+    haptics: 1,
     steerAxis: 'roll',
     invertSteer: false,
     invertThrottle: false,

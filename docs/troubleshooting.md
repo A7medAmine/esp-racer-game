@@ -30,7 +30,13 @@
 | Stick gas/brake swapped | Toggle *Invert stick* (calibration step 3 does it automatically). |
 | Car creeps forward or brakes by itself | The stick center was measured while touched. Send `CALJOY` with the stick released, or just replug the controller without touching the stick. |
 | Status LED blinks fast / "sensor NOT FOUND" | Check ADXL345 wiring: SDA to D2, SCL to D1, VCC to 3V3, GND to GND, CS to 3V3. Loose jumper wires are the usual cause. |
-| Button does nothing | SW must go to **D5**. Check in **Controller > Live test**. |
+| Button does nothing | SW (or the nitro button) must go to **D5**, other leg to GND. Check in **Controller > Live test**. |
+| Paddles do nothing | Gas to **D6**, brake to **D7**, other legs to GND. Needs firmware 1.1: the *Connection* card says "Supports gas/brake paddles". **Live test** shows `gas 1` / `brake 1` while pressed. |
+| No gas at all, controller connected | *Gas / brake* is on **Paddles** but no paddles are wired (or the firmware is 1.0). Set it back to **Joystick**. |
+| Car creeps or brakes by itself, no joystick wired | Set *Gas / brake* to **Paddles**: an unconnected A0 reads noise. |
+| No vibration | Needs firmware 1.1, *Vibration* not Off, and the transistor circuit (D0, 1 kΩ, transistor, diode). Try **Test vibration**. Check the transistor's E/B/C order. |
+| Controller resets when it vibrates | Add the 100 µF capacitor across 3V3/GND next to the motor. |
+| Motor buzzes all the time | Transistor wired wrong (collector and emitter swapped) or shorted. Unplug and check. |
 
 ## Game
 

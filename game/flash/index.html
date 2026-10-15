@@ -21,6 +21,7 @@
     esp-web-install-button button[slot=activate] { font: 700 20px Rajdhani, sans-serif; letter-spacing: 0.1em; text-transform: uppercase;
       background: var(--accent); color: #fff; border: 0; padding: 14px 28px; cursor: pointer; margin: 10px 0 18px; }
     a { color: #38e1ff; }
+    esp-web-install-button button.old { font-size: 15px; background: transparent; border: 1px solid var(--line); color: var(--dim); padding: 6px 14px; margin: 6px 0; }
   </style>
 </head>
 <body>
@@ -37,6 +38,11 @@
       <span slot="unsupported">Your browser can't flash devices. Use <b>Chrome</b> or <b>Edge</b> on a computer.</span>
       <span slot="not-allowed">This page must be opened from <b>http://localhost</b> (run start-game) or over https.</span>
     </esp-web-install-button>
+    <p class="note">Need the old version 1.0 (joystick only, no paddles or vibration)?
+      <esp-web-install-button manifest="manifest-v1.0.json">
+        <button slot="activate" class="old">Install version 1.0</button>
+      </esp-web-install-button>
+      Version 1.1 still works with the joystick, so you normally don't need this.</p>
     <p class="note">No port shows up? Install the USB driver for your board's chip:
       <a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers" target="_blank" rel="noopener">CP2102</a> or
       <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html" target="_blank" rel="noopener">CH340</a>.

@@ -1,5 +1,6 @@
 // Parses the text lines sent by the controller firmware (see docs/protocol.md).
-//   D,<seq>,<roll x10>,<pitch x10>,<joy -1000..1000>,<btn 0/1>,<flags>
+//   D,<seq>,<roll x10>,<pitch x10>,<joy -1000..1000>,<btn 0/1>,<flags>[,<gas 0/1>,<brake 0/1>]
+//   (gas and brake paddles were added in firmware 1.1; older firmware stops at flags)
 //   I {json}          device info
 //   OK ... / ERR ...  command replies
 //   # ...             log lines
@@ -20,6 +21,8 @@ export function parseLine(raw) {
       joy: Math.max(-1, Math.min(1, n[3] / 1000)),
       button: n[4] === 1,
       sensorOk: p.length > 6 ? (n[5] & 1) === 1 : true,
+      gas: p.length > 8 && n[6] === 1,
+      brake: p.length > 8 && n[7] === 1,
     };
   }
   if (line.startsWith('I ')) {

@@ -7,6 +7,7 @@ Built for **AFAQ Open Week** by the AFAQ Scientific Club.
 
 - Tilt the controller to steer (ADXL345 accelerometer, MPU6050 supported too)
 - Joystick: up = gas, down = brake then reverse, hold the button = nitro
+- Optional gas/brake paddles, a nitro button and a phone vibration motor for crash and nitro feedback
 - Connect over **USB** or **WiFi** (the controller can make its own hotspot)
 - Race up to 5 AI drivers or chase lap records, on 3 tracks at day, sunset or night
 - Runs in the browser: no game engine, no installs, works offline
@@ -38,6 +39,17 @@ You need: a **NodeMCU ESP8266**, an **ADXL345** module (GY-291), a **joystick** 
 | Joystick SW | D5 |
 | Joystick VRx | not connected |
 
+Optional extras (firmware 1.1+), each button's other leg goes to GND:
+
+![Wiring of the optional extras](docs/wiring-extras.svg)
+
+| From | To NodeMCU |
+|---|---|
+| Gas paddle | D6 |
+| Brake paddle | D7 |
+| Nitro button | D5 (in parallel with the joystick SW) |
+| Vibration motor | D0 through an NPN transistor, **never directly** (circuit in [docs/hardware.md](docs/hardware.md#vibration-motor-optional)) |
+
 Details, assembly tips and the MPU6050 upgrade: [docs/hardware.md](docs/hardware.md).
 
 ### 2. Start the game
@@ -56,7 +68,8 @@ In the game: **Controller > Install firmware on the ESP8266**, plug in the NodeM
 
 1. Go back to the game tab: **Controller > Connect USB**, pick the port.
    Keep the stick released while it connects.
-2. **Calibrate (guided)**: hold level, press the stick button; tilt right, press; push the stick up.
+2. **Calibrate (guided)**: hold level, press the nitro button; tilt right, press; push the stick up.
+   Using paddles instead of the joystick? Set **Gas / brake** to **Paddles** first.
 3. Back to the menu, **Race**, **Start**. Go!
 
 Want it wireless? The controller already runs a hotspot: join WiFi `ESP-Racer` (password `racer1234`)
@@ -70,11 +83,11 @@ See [docs/connecting.md](docs/connecting.md).
 | Action | Controller | Keyboard |
 |---|---|---|
 | Steer | Tilt left / right | Arrows / A D |
-| Gas | Stick up | Up / W |
-| Brake, then reverse | Stick down | Down / S |
-| Nitro | Hold stick button | Space / Shift |
-| Pause | Double-click stick button | Esc / P |
-| Menus | Stick to move, tilt to change, click to select | Arrows, Enter, Esc, mouse |
+| Gas | Stick up / gas paddle | Up / W |
+| Brake, then reverse | Stick down / brake paddle | Down / S |
+| Nitro | Hold nitro button | Space / Shift |
+| Pause | Double-click nitro button | Esc / P |
+| Menus | Stick or paddles to move, tilt to change, nitro to select | Arrows, Enter, Esc, mouse |
 
 ## Documentation
 

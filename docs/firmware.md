@@ -11,6 +11,16 @@ three ways below. Option A is the easiest.
 
 This flashes the prebuilt `game/flash/firmware.bin`. Needs Chrome or Edge, and internet once to load the installer.
 
+### Versions
+
+| Version | What it has |
+|---|---|
+| 1.1 (default) | Everything in 1.0, plus gas/brake paddles (D6/D7) and the vibration motor (D0). Works on a joystick-only controller too |
+| 1.0 | Tilt + joystick + stick button. Kept as `game/flash/firmware-v1.0.bin`, installable from the same page (*Install version 1.0*) |
+
+The game works with both. With 1.0 it simply has no paddles or vibration. The whole 1.0 project (game included)
+is also tagged in git as `v1.0-joystick`: `git checkout v1.0-joystick`.
+
 ## Option B: PlatformIO (VS Code)
 
 1. Install VS Code and the **PlatformIO IDE** extension.
@@ -39,12 +49,12 @@ PlatformIO installs the ESP8266 core and the WebSockets library by itself.
 Open a serial monitor at **115200 baud** (Arduino IDE, `pio device monitor`, or any terminal). You should see:
 
 ```
-# ESP Racer controller 1.0.0
+# ESP Racer controller 1.1.0
 # Tilt sensor: ADXL345 at 0x53
 # Joystick center: 517 (keep the stick released while booting)
-I {"fw":"1.0.0","sensor":"ADXL345",...}
-D,0,12,-35,0,0,1
-D,1,13,-34,0,0,1
+I {"fw":"1.1.0","sensor":"ADXL345",...,"caps":["pedals","haptics"]}
+D,0,12,-35,0,0,1,0,0
+D,1,13,-34,0,0,1,0,0
 ...
 ```
 

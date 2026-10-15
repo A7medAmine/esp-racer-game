@@ -9,6 +9,7 @@ import { CameraRig } from './camera.js';
 import { Effects } from './effects.js';
 import { Hud, formatTime } from './hud.js';
 import { InputManager } from './input/controller.js';
+import { Haptics } from './input/haptics.js';
 import { SerialTransport } from './input/serial.js';
 import { Race } from './race.js';
 import { CAR_COLORS, saveSettings, settings } from './settings.js';
@@ -62,6 +63,7 @@ function resize() {
 // Game objects
 // ---------------------------------------------------------------------------
 const input = new InputManager();
+const haptics = new Haptics(input);
 const audio = new GameAudio();
 audio.volume = settings.audio.volume;
 audio.voice = settings.audio.voice;
@@ -72,7 +74,7 @@ const race = new Race({ scene, renderer, effects, audio, hud, camera: rig });
 buildComposer();
 addEventListener('resize', resize);
 // Handy for debugging from the browser console: __game.race.player etc.
-window.__game = { race, input, settings, audio };
+window.__game = { race, input, settings, audio, haptics };
 
 // state: 'menu' | 'countdown' | 'racing' | 'paused' | 'finished' | 'results' | 'calibrate'
 let state = 'menu';
@@ -115,6 +117,8 @@ function handleSettingChange(key, value) {
     audio.say('go'); // preview
   }
   else if (key === 'graphics.showFps') document.getElementById('fps').textContent = '';
+  else if (key === 'controls.haptics' && value > 0) haptics.pulse(0.8, 250); // preview
+  else if (key === 'controls.layout') warnIfNoPedals();
 }
 
 async function handleAction(action) {
@@ -162,6 +166,15 @@ async function handleAction(action) {
       break;
     case 'calibrate':
       startCalibration();
+      break;
+    case 'test-vibration':
+      if (!input.deviceActive) toast('Connect the controller first (USB or WiFi).', { error: true });
+      else if (!input.has('haptics')) toast('This controller firmware has no vibration support: install firmware 1.1 or newer.', { error: true });
+      else if (settings.controls.haptics === 0) toast('Vibration is turned off: set Vibration to Low or High.', { error: true });
+      else {
+        haptics.pulse(1, 600);
+        toast('Buzz! Nothing felt? Check the motor wiring (docs/hardware.md).');
+      }
       break;
     case 'reset-records':
       settings.records = {};
@@ -245,7 +258,15 @@ function showResults() {
 
 function handleRaceEvents() {
   for (const ev of race.events) {
-    if (ev.type === 'lap') {
+    if (ev.type === 'impact') {
+      // car.impact is the hit speed in m/s: ~5 is a scrape, 20+ a big crash.
+      const k = Math.min(1, ev.strength / 18);
+      haptics.pulse(0.35 + k * 0.65, 70 + k * 160);
+    } else if (ev.type === 'count') {
+      haptics.pulse(0.5, 60);
+    } else if (ev.type === 'go') {
+      haptics.pulse(1, 320);
+    } else if (ev.type === 'lap') {
       const trackId = TRACKS[settings.race.track].id;
       const record = settings.records[trackId];
       if (record == null || ev.lapMs < record) {
@@ -264,6 +285,7 @@ function handleRaceEvents() {
       hud.message(mode === 'race' ? (ev.position === 1 ? 'YOU WIN!' : `P${ev.position}`) : 'FINISH', 3);
       const line = mode !== 'race' ? 'congratulations' : ev.position === 1 ? 'you-win' : 'you-lose';
       if (!audio.say(line)) audio.beep(880, 0.6, 0.25);
+      haptics.pulse(0.9, 450);
     } else if (ev.type === 'results') {
       showResults();
     }
@@ -339,8 +361,16 @@ input.on('info', (info) => {
   if (input.kind === 'usb' && info.ip && info.wifiState !== 'off') {
     wifiHostInput.value = info.ip;
   }
+  warnIfNoPedals();
   refreshControllerScreen();
 });
+
+// Paddle layout on a controller still running firmware 1.0: there would be no gas at all.
+function warnIfNoPedals() {
+  if (input.pedalLayout && input.info && !input.has('pedals')) {
+    toast(`Controller firmware ${input.info.fw} has no paddle support. Install the new firmware, or set Gas / brake to Joystick.`, { error: true, ms: 8000 });
+  }
+}
 input.on('reply', (msg) => {
   if (msg.type === 'error') toast(`Controller: ${msg.text}`, { error: true });
 });
@@ -366,6 +396,7 @@ function refreshControllerScreen() {
     lines.push(`Firmware ${info.fw} · Tilt sensor: ${info.sensor}${info.sensorOk ? '' : ' (NOT FOUND - check wiring)'}`);
     const wifiDesc = { off: 'off', ap: `own hotspot "${info.apSsid}" (password ${info.apPass})`, sta: `joined "${info.staSsid}"`, connecting: `joining "${info.staSsid}"...`, 'ap-fallback': `could not join home WiFi, hotspot "${info.apSsid}" active` }[info.wifiState] ?? info.wifiState;
     lines.push(`WiFi: ${wifiDesc}${info.ip ? ` · IP ${info.ip}` : ''}`);
+    lines.push(input.has('haptics') ? 'Supports gas/brake paddles and vibration' : 'Old firmware: no paddles or vibration (install the new firmware to get them)');
   } else if (!SerialTransport.supported()) {
     lines.push('This browser has no USB serial support. Use Chrome or Edge, or connect over WiFi.');
   }
@@ -426,8 +457,9 @@ function updateLiveTest() {
   setBar('lv-brake', input.drive.brake);
   document.getElementById('lv-btn').classList.toggle('on', input.drive.nitro);
   const d = input.device;
+  const paddles = input.has('pedals') ? ` gas ${d.gas ? 1 : 0} brake ${d.brake ? 1 : 0}` : '';
   document.getElementById('lv-raw').textContent = input.connected
-    ? `roll ${d.roll.toFixed(1)}° pitch ${d.pitch.toFixed(1)}° stick ${d.joy.toFixed(2)}`
+    ? `roll ${d.roll.toFixed(1)}° pitch ${d.pitch.toFixed(1)}° stick ${d.joy.toFixed(2)}${paddles}`
     : '';
 }
 
@@ -436,8 +468,8 @@ function updateLiveTest() {
 // ---------------------------------------------------------------------------
 const calib = { step: 0, level: null, stickHold: 0 };
 const CALIB_TEXT = [
-  'Hold the controller <b>level</b>, the way you will hold it while driving. Then press the stick button.',
-  'Now tilt the controller fully to the <b>RIGHT</b>, like turning a steering wheel right. Then press the stick button.',
+  'Hold the controller <b>level</b>, the way you will hold it while driving. Then press the nitro button.',
+  'Now tilt the controller fully to the <b>RIGHT</b>, like turning a steering wheel right. Then press the nitro button.',
   'Push the stick <b>UP</b> (gas) and hold it for a moment...',
   'Calibration saved! Press the button to go back.',
 ];
@@ -449,6 +481,7 @@ function startCalibration() {
   }
   calib.step = 0;
   calib.stickHold = 0;
+  document.getElementById('cal-joy-row').classList.toggle('hidden', input.pedalLayout);
   state = 'calibrate';
   menus.show('screen-calibrate');
   document.getElementById('calib-text').innerHTML = CALIB_TEXT[0];
@@ -482,7 +515,8 @@ function calibrationEvent(ev) {
     const range = Math.round((Math.abs(delta) * 0.85) / 5) * 5;
     c.tiltRange = Math.max(15, Math.min(60, range));
     saveSettings();
-    calib.step = 2;
+    // Paddles need no calibration: skip the stick step.
+    calib.step = input.pedalLayout ? 3 : 2;
   } else if (calib.step === 3) {
     state = 'menu';
     menus.back();
@@ -540,6 +574,7 @@ function frame() {
 
   if (state !== 'paused') race.update(dt, input.drive);
   handleRaceEvents();
+  updateHaptics(dt);
 
   const player = race.player;
   if (player) {
@@ -579,6 +614,21 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
+// Continuous rumbles; one-shot pulses come from handleRaceEvents and the menus.
+let nitroWas = false;
+function updateHaptics(dt) {
+  const p = race.player;
+  const driving = p && (state === 'racing' || state === 'finished');
+  if (driving) {
+    const speed = Math.abs(p.forwardSpeed);
+    if (p.nitroActive && !nitroWas) haptics.pulse(0.85, 220);
+    if (p.nitroActive) haptics.setRumble(0.3);
+    if (p.onGrass && speed > 3) haptics.setRumble(0.25 + Math.min(0.35, speed / 120));
+  }
+  nitroWas = !!(driving && p.nitroActive);
+  haptics.update(dt);
+}
+
 // Audio needs a user gesture; any click or key unlocks it.
 for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => audio.unlock());
 
@@ -606,7 +656,7 @@ async function boot() {
 
 function updateTitleHint() {
   document.getElementById('title-hint').textContent = input.connected
-    ? `Controller connected via ${input.kind === 'usb' ? 'USB' : 'WiFi'}. Stick to move, click to select.`
+    ? `Controller connected via ${input.kind === 'usb' ? 'USB' : 'WiFi'}. Stick or paddles to move, nitro button to select.`
     : 'No controller connected: open Controller to connect, or play with the keyboard.';
 }
 
