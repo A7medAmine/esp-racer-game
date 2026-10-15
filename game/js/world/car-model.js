@@ -1,9 +1,14 @@
-// Procedural sports car built from extruded profiles. Faces +z, sits on y = 0.
+// Car models. Every car is a Porsche GT3 RS loaded from assets/cars/ (made from the Sketchfab
+// original by tools/car-model). If that file can't be loaded, a simple procedural sports car built
+// from extruded profiles is used instead. Both face +z and sit on y = 0.
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const MODEL_URL = 'assets/cars/porsche-gt3-rs.glb';
 
 const BODY_WIDTH = 1.76;
 const CABIN_WIDTH = 1.42;
-export const WHEEL_RADIUS = 0.36;
+const WHEEL_RADIUS = 0.36;
 const WHEEL_X = 0.87;
 const WHEEL_Z = 1.36;
 
@@ -79,19 +84,108 @@ function blobShadowTexture() {
   return shadowTex;
 }
 
-export function createCarModel(colorHex) {
-  const g = sharedGeometry();
-  const root = new THREE.Group(); // positioned by physics
-  const body = new THREE.Group(); // rolls / pitches with suspension
-  root.add(body);
-
-  const paint = new THREE.MeshPhysicalMaterial({
+function paintMaterial(colorHex) {
+  return new THREE.MeshPhysicalMaterial({
     color: colorHex,
     metalness: 0.55,
     roughness: 0.32,
     clearcoat: 1,
     clearcoatRoughness: 0.06,
   });
+}
+
+// Soft blob shadow helps cars sit on the road when real shadows are off or far.
+function addBlobShadow(root) {
+  const blob = new THREE.Mesh(
+    sharedGeometry().shadow,
+    new THREE.MeshBasicMaterial({ map: blobShadowTexture(), transparent: true, depthWrite: false }),
+  );
+  blob.rotation.x = -Math.PI / 2;
+  blob.position.y = 0.06;
+  blob.renderOrder = 1;
+  root.add(blob);
+}
+
+let template = null; // the loaded GT3 RS scene; every car clones it and shares its geometry
+
+// Load the car model once at startup. Always resolves: on failure the procedural car is used.
+export async function loadCarModel() {
+  try {
+    const gltf = await new GLTFLoader().loadAsync(MODEL_URL);
+    gltf.scene.traverse((o) => {
+      if (!o.isMesh) return;
+      o.material.userData.shared = true; // race.js only frees per-car materials
+      o.castShadow = !o.material.transparent;
+    });
+    template = gltf.scene;
+  } catch (err) {
+    console.warn(`Could not load ${MODEL_URL}, using the procedural car instead.`, err);
+  }
+}
+
+export function createCarModel(colorHex) {
+  return template ? createGt3rs(colorHex) : createProceduralCar(colorHex);
+}
+
+// Node layout and scene extras come from tools/car-model/convert.mjs.
+function createGt3rs(colorHex) {
+  const info = template.userData; // wheelRadius, wheels, exhausts
+  const car = template.clone().getObjectByName('GT3RS');
+  const root = new THREE.Group(); // positioned by physics
+  const body = new THREE.Group(); // rolls / pitches with suspension
+  root.add(body);
+  body.add(car.getObjectByName('body'));
+
+  // Wheels hang off the root so they stay on the road while the body rolls.
+  // pivot (steering, carries the brake) -> spin (rolling rim and tire)
+  const wheels = [];
+  for (const corner of ['FL', 'FR', 'RL', 'RR']) {
+    const pivot = car.getObjectByName(`wheel_${corner}`);
+    root.add(pivot);
+    const spin = pivot.children.find((o) => o.name.startsWith('spin'));
+    wheels.push({ pivot, spin, front: corner[0] === 'F' });
+  }
+
+  // Per-car materials; everything else stays shared with the template.
+  const paint = paintMaterial(colorHex);
+  const head = new THREE.MeshStandardMaterial({
+    color: 0xc8ccd2,
+    metalness: 1,
+    roughness: 0.15,
+    // The whole reflector glows, so it gets a dim linear color; race.js scales it up at night.
+    emissive: new THREE.Color().setRGB(0.3, 0.29, 0.26),
+  });
+  const tail = new THREE.MeshStandardMaterial({ color: 0x550000, emissive: 0xff1a0a, roughness: 0.25 });
+  const swap = { paint, headlight: head, taillight: tail };
+  root.traverse((o) => {
+    if (o.isMesh && swap[o.material.name]) o.material = swap[o.material.name];
+  });
+
+  addBlobShadow(root);
+  const rear = info.wheels.RL;
+  return {
+    root,
+    body,
+    wheels,
+    wheelRadius: info.wheelRadius,
+    rearAxle: { z: rear[2], x: rear[0] },
+    paint,
+    tail,
+    head,
+    exhausts: info.exhausts.map(([x, y, z]) => new THREE.Vector3(x, y, z - 0.05)),
+    setColor(hex) {
+      paint.color.setHex(hex);
+    },
+  };
+}
+
+function createProceduralCar(colorHex) {
+  const g = sharedGeometry();
+  const root = new THREE.Group(); // positioned by physics
+  const body = new THREE.Group(); // rolls / pitches with suspension
+  root.add(body);
+
+  const paint = paintMaterial(colorHex);
   const glass = new THREE.MeshPhysicalMaterial({ color: 0x0b0f16, metalness: 0.2, roughness: 0.05, clearcoat: 1 });
   const black = new THREE.MeshStandardMaterial({ color: 0x111214, roughness: 0.6, metalness: 0.3 });
   const chrome = new THREE.MeshStandardMaterial({ color: 0xd8dde4, roughness: 0.18, metalness: 1 });
@@ -144,20 +238,13 @@ export function createCarModel(colorHex) {
     wheels.push({ pivot, spin, front: z > 0 });
   }
 
-  // Soft blob shadow helps cars sit on the road when real shadows are off or far.
-  const blob = new THREE.Mesh(
-    g.shadow,
-    new THREE.MeshBasicMaterial({ map: blobShadowTexture(), transparent: true, depthWrite: false }),
-  );
-  blob.rotation.x = -Math.PI / 2;
-  blob.position.y = 0.06;
-  blob.renderOrder = 1;
-  root.add(blob);
-
+  addBlobShadow(root);
   return {
     root,
     body,
     wheels,
+    wheelRadius: WHEEL_RADIUS,
+    rearAxle: { z: -WHEEL_Z, x: WHEEL_X },
     paint,
     tail,
     head,

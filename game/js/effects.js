@@ -188,9 +188,10 @@ export class Effects {
     const burnout = car.throttle > 0.9 && car.forwardSpeed < 6 && car.forwardSpeed > -1 && !car.onGrass;
     const hardBrake = car.braking && speed > 12 && !car.onGrass;
 
+    const { z: axleZ, x: axleX } = model.rearAxle;
     for (const side of [-1, 1]) {
-      const wx = car.x - fx * 1.36 + lx * side * 0.84;
-      const wz = car.z - fz * 1.36 + lz * side * 0.84;
+      const wx = car.x + fx * axleZ + lx * side * axleX;
+      const wz = car.z + fz * axleZ + lz * side * axleX;
       const key = `${car.name}${side}`;
       if (car.onGrass && speed > 5) {
         if (Math.random() < Math.min(1, speed / 25)) {

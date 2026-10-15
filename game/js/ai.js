@@ -12,11 +12,21 @@ function wrapAngle(a) {
   return a;
 }
 
+// Difficulty presets. speed: base top-speed scale (plus skill * 0.05);
+// catchUp / easeOff: rubber-band strength when behind / ahead of the player;
+// grip: base cornering grip (plus skill * 0.12); nitroSkill: minimum skill to use nitro.
+export const DIFFICULTY = {
+  easy: { speed: 0.8, min: 0.72, max: 0.9, catchUp: 0.03, easeOff: 0.1, grip: 0.7, gripBase: 0.93, nitroSkill: 2 },
+  normal: { speed: 0.87, min: 0.8, max: 0.96, catchUp: 0.04, easeOff: 0.08, grip: 0.76, gripBase: 0.95, nitroSkill: 0.92 },
+  hard: { speed: 0.95, min: 0.88, max: 1.08, catchUp: 0.06, easeOff: 0.06, grip: 0.82, gripBase: 0.97, nitroSkill: 0.85 },
+};
+
 export class AIDriver {
-  constructor(vehicle, track, skill, seed) {
+  constructor(vehicle, track, skill, seed, difficulty = 'normal') {
     this.car = vehicle;
     this.track = track;
     this.skill = skill; // 0.8 .. 1.0
+    this.diff = DIFFICULTY[difficulty] ?? DIFFICULTY.normal;
     this.lane = ((seed % 3) - 1) * 2.5;
     this.laneTarget = this.lane;
     this.stuckTime = 0;
@@ -41,9 +51,12 @@ export class AIDriver {
 
     // Rubber band: keep the pack close to the player so races stay exciting.
     const gap = (player.progress - car.progress) * t.ds; // + = player ahead
+    // Asymmetric: AI ahead of the player eases off harder than AI behind catches up.
     const band = clamp(gap / 400, -1, 1);
-    car.speedScale = clamp(0.95 + this.skill * 0.05 + band * 0.06, 0.88, 1.08);
-    car.gripScale = 0.97 + band * 0.04;
+    const d = this.diff;
+    const pull = band > 0 ? band * d.catchUp : band * d.easeOff;
+    car.speedScale = clamp(d.speed + this.skill * 0.05 + pull, d.min, d.max);
+    car.gripScale = d.gripBase + band * 0.03;
 
     // Traffic: move to another lane when a car is close ahead.
     this.laneTarget = this.lane;
@@ -71,7 +84,7 @@ export class AIDriver {
     input.steer = clamp(-diff * 2.6, -1, 1);
 
     // Speed planning: the slowest corner ahead (accounting for braking distance).
-    const grip = TUNING.grip * car.gripScale * (0.82 + this.skill * 0.12);
+    const grip = TUNING.grip * car.gripScale * (d.grip + this.skill * 0.12);
     const brakeDecel = TUNING.brake * 0.6;
     const scan = (speed * 2.4 + 40) / t.ds;
     let target = TUNING.maxSpeed * car.speedScale;
@@ -94,7 +107,7 @@ export class AIDriver {
       input.throttle = 0.4;
       input.brake = 0;
     }
-    input.nitro = car.nitro > 0.4 && target > speed + 18 && Math.abs(input.steer) < 0.3 && this.skill > 0.85;
+    input.nitro = car.nitro > 0.4 && target > speed + 18 && Math.abs(input.steer) < 0.3 && this.skill > d.nitroSkill;
 
     // Recover when stuck against a wall or spun around.
     if (speed < 2 || car.wrongWayTime > 1.5) this.stuckTime += dt;

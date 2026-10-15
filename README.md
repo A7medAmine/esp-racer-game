@@ -97,12 +97,20 @@ esp-racer-game/
   firmware/                        ESP8266 firmware (PlatformIO project + Arduino sketch folder)
     esp-racer-controller/          the sketch: .ino, config.h, sensor, WiFi, settings
   docs/                            documentation and wiring diagram
-  tools/                           local web server, firmware build scripts
+  tools/                           local web server, firmware build scripts, car model and sound builders
 ```
 
 ## Credits
 
 - Made for AFAQ Open Week. AFAQ mark and Unixel font from the [AFAQ brand kit](https://afaq.club/brand).
 - [Three.js](https://threejs.org) r170 (MIT), vendored in `game/vendor/three/`.
+- Car model: ["Porsche GT3 RS"](https://sketchfab.com/3d-models/porsche-gt3-rs-e738eae819c34d19a31dd066c45e0f3d)
+  by [Black Snow](https://sketchfab.com/BlackSnow02), [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/).
+  Simplified for the game (engine and most of the cabin removed, fewer polygons and materials) by `tools/car-model/`.
+- Sounds: real recordings from [BigSoundBank](https://bigsoundbank.com) (Joseph Sardin, CC0) and
+  [Kenney](https://kenney.nl) (CC0, announcer voices by Jeffrey M. Smith and Giselle), plus
+  ["Car Engine Loop"](https://opengameart.org/content/car-engine-loop-96khz-4s) by qubodup
+  ([CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)). Full list in `game/assets/audio/CREDITS.md`;
+  cut into loops by `tools/audio/build.py`.
 - [ESP Web Tools](https://esphome.github.io/esp-web-tools/) for the browser installer.
 - [arduinoWebSockets](https://github.com/Links2004/arduinoWebSockets) by Markus Sattler.

@@ -12,7 +12,7 @@ $mime = @{
   '.mjs' = 'text/javascript; charset=utf-8'; '.css' = 'text/css; charset=utf-8'
   '.json' = 'application/json'; '.png' = 'image/png'; '.jpg' = 'image/jpeg'
   '.svg' = 'image/svg+xml'; '.ico' = 'image/x-icon'; '.bin' = 'application/octet-stream'
-  '.wasm' = 'application/wasm'; '.txt' = 'text/plain; charset=utf-8'; '.md' = 'text/plain; charset=utf-8'
+  '.glb' = 'model/gltf-binary'; '.ogg' = 'audio/ogg'; '.wasm' = 'application/wasm'; '.txt' = 'text/plain; charset=utf-8'; '.md' = 'text/plain; charset=utf-8'
 }
 
 $listener = $null

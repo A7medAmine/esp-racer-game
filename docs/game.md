@@ -57,7 +57,10 @@ wrong way for a few seconds puts you back on track automatically.
 - **Graphics quality**: High (shadows, 4x MSAA, full resolution), Medium, Low (for older laptops).
 - **Glow effects**: bloom on lights, nitro and the sky.
 - **Show FPS**: frame counter at the bottom.
-- **Volume**: all sound is synthesized live (engine with gear shifts, tire screech, wind, nitro).
+- **Volume**: master volume. Sounds are real recordings: a V8 idle blending into a high-rpm engine with
+  gear shifts, tire squeal, road roar (a dull rumble on grass), nitro, crashes and menu clicks.
+- **Announcer**: male or female voice for the countdown, wrong way, final lap, new records and the finish; Off
+  falls back to beeps.
 
 ## Code map
 
@@ -71,14 +74,17 @@ game/
   js/ai.js              AI drivers
   js/camera.js          chase / far / hood cameras, showroom orbit
   js/effects.js         smoke, dust, nitro flames, sparks, skid marks
-  js/audio.js           synthesized sound
+  js/audio.js           engine, effects and announcer (plays the recordings in assets/audio/)
   js/hud.js             speedometer, minimap, lap panel
   js/ui.js              menu navigation
   js/settings.js        saved settings and menu options
   js/input/             controller.js (input mapping), serial.js (USB), wifi.js (WebSocket), protocol.js
   js/world/             tracks.js (track list), track.js (road geometry), environment.js (sky,
-                        lighting, scenery), car-model.js, textures.js (procedural textures)
+                        lighting, scenery), car-model.js (loads the GT3 RS, procedural fallback),
+                        textures.js (procedural textures)
   assets/afaq/          AFAQ Scientific Club mark and pixel font (Open Week branding)
+  assets/cars/          the Porsche GT3 RS every car uses (made by tools/car-model/, see its README)
+  assets/audio/         sounds and announcer lines (made by tools/audio/build.py, sources in CREDITS.md)
   flash/                browser firmware installer + prebuilt firmware.bin
   vendor/three/         Three.js r170 (MIT)
 ```

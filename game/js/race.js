@@ -26,9 +26,9 @@ export class Race {
   }
 
   // Build (or rebuild) the world. Cheap enough to call when menu options change.
-  build({ trackIndex, time, laps, opponents, mode, colorIndex, quality }) {
+  build({ trackIndex, time, laps, opponents, difficulty, mode, colorIndex, quality }) {
     this.dispose();
-    this.opts = { trackIndex, time, laps, opponents, mode, colorIndex, quality };
+    this.opts = { trackIndex, time, laps, opponents, difficulty, mode, colorIndex, quality };
     const def = TRACKS[trackIndex];
     const theme = THEMES[def.theme];
     this.timeCfg = TIMES[time];
@@ -59,7 +59,7 @@ export class Race {
       usedColors.add(ci);
       const car = this.addCar({ name: AI_NAMES[k], colorHex: CAR_COLORS[ci].hex, slot: k });
       const skill = 0.84 + ((k * 37) % 17) / 100;
-      this.drivers.push(new AIDriver(car, this.track, skill, k));
+      this.drivers.push(new AIDriver(car, this.track, skill, k, difficulty));
     }
 
     // Player headlights (visible at sunset / night).
@@ -159,7 +159,7 @@ export class Race {
       if (count !== this.lastCount && t < COUNTDOWN) {
         this.lastCount = count;
         this.hud.countdown(String(3 - count));
-        this.audio.beep(520, 0.22, 0.22);
+        if (!this.audio.say(String(3 - count))) this.audio.beep(520, 0.22, 0.22);
       }
       this.track.setStartLights(Math.min(5, Math.floor((t / COUNTDOWN) * 5) + 1));
       // Rev the engine on the line.
@@ -168,7 +168,7 @@ export class Race {
         this.state = 'racing';
         this.track.setStartLights(5, true);
         this.hud.countdown('GO!');
-        this.audio.beep(1040, 0.5, 0.3);
+        if (!this.audio.say('go')) this.audio.beep(1040, 0.5, 0.3);
         setTimeout(() => this.hud.countdown(''), 900);
         for (const car of this.cars) car.lapStart = 0;
       }
@@ -193,7 +193,11 @@ export class Race {
     // Player helpers: wrong way warning and auto-reset.
     const p = this.player;
     if (this.state === 'racing') {
-      if (p.wrongWayTime > 1.2) this.hud.message('WRONG WAY', 0.3);
+      if (p.wrongWayTime > 1.2) {
+        this.hud.message('WRONG WAY', 0.3);
+        if (!this.wrongWayCalled) this.audio.say('wrong');
+      }
+      this.wrongWayCalled = p.wrongWayTime > 1.2;
       if (p.wrongWayTime > 4) {
         p.respawn();
         p.wrongWayTime = 0;
@@ -295,8 +299,8 @@ export class Race {
     this.env.dispose();
     for (const m of this.models) {
       this.scene.remove(m.root);
-      // Geometry is shared between cars; only the per-car materials are freed.
-      m.root.traverse((o) => o.isMesh && !o.material.map && o.material.dispose());
+      // Geometry and model materials are shared between cars; only the per-car materials are freed.
+      m.root.traverse((o) => o.isMesh && !o.material.map && !o.material.userData.shared && o.material.dispose());
     }
     this.track = null;
     this.cars = [];

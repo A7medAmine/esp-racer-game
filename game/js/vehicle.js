@@ -1,7 +1,6 @@
 // Arcade car physics on a flat track: engine, brakes, reverse, grip-limited
 // cornering (the car slides when you carry too much speed), nitro, grass and walls.
 import { CURB_WIDTH, ROAD_HALF_WIDTH, WALL_OFFSET } from './world/track.js';
-import { WHEEL_RADIUS } from './world/car-model.js';
 
 export const TUNING = {
   maxSpeed: 68, // m/s (~245 km/h)
@@ -64,7 +63,7 @@ export class Vehicle {
     this.reversing = false;
     this.throttle = 0;
     this.impact = 0;
-    this.wheelSpin = 0;
+    this.wheelTravel = 0; // meters rolled; each model turns it into wheel rotation
     this.trackIndex = 0;
     this.progress = 0; // samples travelled since the line (negative before the start)
     this.lapsDone = -1;
@@ -190,7 +189,7 @@ export class Vehicle {
 
     this.collideWalls();
     this.updateProgress(now, dt);
-    this.wheelSpin += (vF / WHEEL_RADIUS) * dt;
+    this.wheelTravel += vF * dt;
   }
 
   collideWalls() {
@@ -255,7 +254,7 @@ export class Vehicle {
     model.body.rotation.x += (pitch - model.body.rotation.x) * k;
     model.body.position.y = this.onGrass ? Math.sin(performance.now() * 0.05) * 0.015 * Math.min(1, this.speed / 10) : 0;
     for (const w of model.wheels) {
-      w.spin.rotation.x = this.wheelSpin;
+      w.spin.rotation.x = this.wheelTravel / model.wheelRadius;
       if (w.front) w.pivot.rotation.y = -this.steerAngle;
     }
   }

@@ -1,3 +1,11 @@
+# Car model converter dependencies and the big downloaded source model
+# (the game only needs the converted copy in game/assets/cars/)
+tools/car-model/node_modules/
+/porsche_gt3_rs.glb
+
+# Raw sound downloads (the game only needs the processed files in game/assets/audio/)
+tools/audio/src/
+
 # PlatformIO build output
 firmware/.pio/
 .DS_Store

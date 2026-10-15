@@ -13,6 +13,7 @@ import { SerialTransport } from './input/serial.js';
 import { Race } from './race.js';
 import { CAR_COLORS, saveSettings, settings } from './settings.js';
 import { Menus, toast } from './ui.js';
+import { loadCarModel } from './world/car-model.js';
 import { TRACKS } from './world/tracks.js';
 
 // ---------------------------------------------------------------------------
@@ -63,6 +64,7 @@ function resize() {
 const input = new InputManager();
 const audio = new GameAudio();
 audio.volume = settings.audio.volume;
+audio.voice = settings.audio.voice;
 const hud = new Hud();
 const effects = new Effects(scene);
 const rig = new CameraRig(camera);
@@ -70,7 +72,7 @@ const race = new Race({ scene, renderer, effects, audio, hud, camera: rig });
 buildComposer();
 addEventListener('resize', resize);
 // Handy for debugging from the browser console: __game.race.player etc.
-window.__game = { race, input, settings };
+window.__game = { race, input, settings, audio };
 
 // state: 'menu' | 'countdown' | 'racing' | 'paused' | 'finished' | 'results' | 'calibrate'
 let state = 'menu';
@@ -82,6 +84,7 @@ function buildWorld() {
     time: settings.race.time,
     laps: settings.race.laps,
     opponents: settings.race.opponents,
+    difficulty: settings.race.difficulty,
     mode,
     colorIndex: settings.car.color,
     quality: settings.graphics.quality,
@@ -100,13 +103,17 @@ const menus = new Menus({
 });
 
 function handleSettingChange(key, value) {
-  if (key === 'race.track' || key === 'race.time' || key === 'race.opponents') buildWorld();
+  if (key === 'race.track' || key === 'race.time' || key === 'race.opponents' || key === 'race.difficulty') buildWorld();
   else if (key === 'car.color') race.setPlayerColor(CAR_COLORS[value].hex);
   else if (key === 'graphics.quality') {
     buildComposer();
     buildWorld();
   } else if (key === 'graphics.bloom') bloomPass.enabled = value;
   else if (key === 'audio.volume') audio.setVolume(value);
+  else if (key === 'audio.voice') {
+    audio.voice = value;
+    audio.say('go'); // preview
+  }
   else if (key === 'graphics.showFps') document.getElementById('fps').textContent = '';
 }
 
@@ -117,6 +124,7 @@ async function handleAction(action) {
       mode = action === 'mode-race' ? 'race' : 'trial';
       document.getElementById('setup-title').textContent = mode === 'race' ? 'Race setup' : 'Time trial';
       document.getElementById('sel-opponents').classList.toggle('hidden', mode !== 'race');
+      document.getElementById('sel-difficulty').classList.toggle('hidden', mode !== 'race');
       buildWorld();
       menus.show('screen-setup');
       break;
@@ -244,16 +252,18 @@ function handleRaceEvents() {
         settings.records[trackId] = ev.lapMs;
         saveSettings();
         hud.message(`NEW RECORD ${formatTime(ev.lapMs)}`, 2.5);
-        audio.beep(1320, 0.3, 0.2);
+        if (!audio.say('new-record')) audio.beep(1320, 0.3, 0.2);
       } else if (ev.lapsDone === settings.race.laps - 1) {
         hud.message('FINAL LAP', 2);
+        audio.say('final-round');
       } else if (ev.lapsDone < settings.race.laps) {
         hud.message(`LAP ${ev.lapsDone + 1}`, 1.5);
       }
     } else if (ev.type === 'finish') {
       state = 'finished';
       hud.message(mode === 'race' ? (ev.position === 1 ? 'YOU WIN!' : `P${ev.position}`) : 'FINISH', 3);
-      audio.beep(880, 0.6, 0.25);
+      const line = mode !== 'race' ? 'congratulations' : ev.position === 1 ? 'you-win' : 'you-lose';
+      if (!audio.say(line)) audio.beep(880, 0.6, 0.25);
     } else if (ev.type === 'results') {
       showResults();
     }
@@ -479,7 +489,7 @@ function calibrationEvent(ev) {
     menus.refresh();
     return;
   }
-  audio.blip();
+  audio.confirm();
   document.getElementById('calib-text').innerHTML = CALIB_TEXT[calib.step];
 }
 
@@ -494,7 +504,7 @@ function updateCalibration(dt) {
       settings.controls.invertThrottle = d.joy < 0;
       saveSettings();
       calib.step = 3;
-      audio.blip();
+      audio.confirm();
       document.getElementById('calib-text').innerHTML = CALIB_TEXT[3];
     }
   }
@@ -576,6 +586,7 @@ for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => audio.un
 // Boot
 // ---------------------------------------------------------------------------
 async function boot() {
+  await loadCarModel();
   buildWorld();
   menus.show('screen-title', { reset: true });
   document.getElementById('loading').classList.add('done');

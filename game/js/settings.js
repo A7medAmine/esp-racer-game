@@ -24,6 +24,11 @@ export const OPTIONS = {
   ],
   'race.laps': [1, 2, 3, 4, 5, 7, 10].map((n) => ({ value: n, label: String(n) })),
   'race.opponents': [0, 1, 2, 3, 4, 5].map((n) => ({ value: n, label: String(n) })),
+  'race.difficulty': [
+    { value: 'easy', label: 'Easy' },
+    { value: 'normal', label: 'Normal' },
+    { value: 'hard', label: 'Hard' },
+  ],
   'car.color': CAR_COLORS.map((c, i) => ({ value: i, label: c.name })),
   'conn.auto': onOff(),
   'controls.steerAxis': [
@@ -49,6 +54,11 @@ export const OPTIONS = {
     value: v,
     label: `${Math.round(v * 100)}%`,
   })),
+  'audio.voice': [
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' },
+    { value: 'off', label: 'Off' },
+  ],
   'wifiSetup.mode': [
     { value: 'AP', label: 'Own hotspot' },
     { value: 'STA', label: 'Home WiFi' },
@@ -64,7 +74,7 @@ function onOff() {
 }
 
 const DEFAULTS = {
-  race: { track: 0, time: 'sunset', laps: 3, opponents: 3 },
+  race: { track: 0, time: 'sunset', laps: 3, opponents: 3, difficulty: 'normal' },
   car: { color: 0 },
   conn: { auto: true, wifiHost: '192.168.4.1', last: 'none' },
   controls: {
@@ -77,7 +87,7 @@ const DEFAULTS = {
     pitchOffset: 0,
   },
   graphics: { quality: 'high', bloom: true, showFps: false },
-  audio: { volume: 0.6 },
+  audio: { volume: 0.6, voice: 'male' },
   wifiSetup: { mode: 'AP' },
   records: {},
 };
