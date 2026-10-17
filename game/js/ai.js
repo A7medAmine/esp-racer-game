@@ -107,7 +107,9 @@ export class AIDriver {
       input.throttle = 0.4;
       input.brake = 0;
     }
-    input.nitro = car.nitro > 0.4 && target > speed + 18 && Math.abs(input.steer) < 0.3 && this.skill > d.nitroSkill;
+    const straight = Math.abs(input.steer) < 0.3;
+    input.nitro = this.skill > d.nitroSkill && straight &&
+      (car.overdrive > 0 ? target > speed + 4 : car.nitro > 0.4 && target > speed + 18);
 
     // Recover when stuck against a wall or spun around.
     if (speed < 2 || car.wrongWayTime > 1.5) this.stuckTime += dt;

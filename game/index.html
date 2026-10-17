@@ -54,6 +54,7 @@
       <div class="menu">
         <button class="mi" data-action="mode-race">Race</button>
         <button class="mi" data-action="mode-trial">Time Trial</button>
+        <button class="mi" data-action="open-leaderboard">Leaderboard</button>
         <button class="mi" data-action="open-controller">Controller</button>
         <button class="mi" data-action="open-settings">Settings</button>
         <button class="mi" data-action="open-help">How to play</button>
@@ -142,7 +143,7 @@
         <div class="mi sel" data-key="audio.volume"><span class="lbl">Volume</span><span class="val"></span></div>
         <div class="mi sel" data-key="audio.voice"><span class="lbl">Announcer</span><span class="val"></span></div>
         <div class="mi sel" data-key="graphics.showFps"><span class="lbl">Show FPS</span><span class="val"></span></div>
-        <button class="mi" data-action="reset-records">Reset best laps</button>
+        <button class="mi" data-action="reset-leaderboard" id="btn-reset-board">Reset leaderboard</button>
         <button class="mi" data-action="back">Back</button>
       </div>
     </section>
@@ -194,9 +195,31 @@
       </div>
     </section>
 
+    <section class="screen" id="screen-leaderboard">
+      <h2>Leaderboard</h2>
+      <div class="menu wide">
+        <div class="mi sel" data-key="race.track"><span class="lbl">Track</span><span class="val"></span></div>
+      </div>
+      <table id="board-table" class="board"></table>
+      <div class="menu"><button class="mi" data-action="back">Back</button></div>
+      <div class="hint">Best lap per driver run &middot; top 10 per track</div>
+    </section>
+
+    <section class="screen" id="screen-name">
+      <h2>New leaderboard time!</h2>
+      <div id="name-info" class="status-line ok"></div>
+      <div class="menu wide">
+        <div class="mi input-row"><span class="lbl">Name / gamer tag</span><input id="player-name" type="text" spellcheck="false" autocomplete="off" maxlength="16" placeholder="your name"></div>
+        <button class="mi accent" data-action="save-name">Save to leaderboard</button>
+        <button class="mi" data-action="skip-name">Skip</button>
+      </div>
+      <div class="hint">Type your name, then press Enter</div>
+    </section>
+
     <section class="screen" id="screen-results">
       <h2 id="results-title">Finished</h2>
-      <table id="results-table"></table>
+      <div id="results-board" class="status-line ok"></div>
+      <table id="results-table" class="board"></table>
       <div class="menu">
         <button class="mi accent" data-action="restart">Race again</button>
         <button class="mi" data-action="quit">Menu</button>

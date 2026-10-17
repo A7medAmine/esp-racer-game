@@ -11,6 +11,7 @@ import { Hud, formatTime } from './hud.js';
 import { InputManager } from './input/controller.js';
 import { Haptics } from './input/haptics.js';
 import { SerialTransport } from './input/serial.js';
+import { NAME_MAX, addEntry, cleanName, clearLeaderboard, rankFor, topTimes } from './leaderboard.js';
 import { Race } from './race.js';
 import { CAR_COLORS, saveSettings, settings } from './settings.js';
 import { Menus, toast } from './ui.js';
@@ -119,6 +120,7 @@ function handleSettingChange(key, value) {
   else if (key === 'graphics.showFps') document.getElementById('fps').textContent = '';
   else if (key === 'controls.haptics' && value > 0) haptics.pulse(0.8, 250); // preview
   else if (key === 'controls.layout') warnIfNoPedals();
+  if (key === 'race.track' && menus.screenId === 'screen-leaderboard') renderLeaderboard();
 }
 
 async function handleAction(action) {
@@ -140,7 +142,18 @@ async function handleAction(action) {
       refreshControllerScreen();
       break;
     case 'open-settings':
+      disarmReset();
       menus.show('screen-settings');
+      break;
+    case 'open-leaderboard':
+      menus.show('screen-leaderboard');
+      renderLeaderboard();
+      break;
+    case 'save-name':
+      saveLeaderboardName();
+      break;
+    case 'skip-name':
+      showResults(0);
       break;
     case 'open-help':
       menus.show('screen-help');
@@ -176,10 +189,8 @@ async function handleAction(action) {
         toast('Buzz! Nothing felt? Check the motor wiring (docs/hardware.md).');
       }
       break;
-    case 'reset-records':
-      settings.records = {};
-      saveSettings();
-      toast('Best laps cleared');
+    case 'reset-leaderboard':
+      resetLeaderboard();
       break;
     case 'resume':
       resume();
@@ -228,9 +239,103 @@ function quitToMenu() {
   menus.show('screen-title', { reset: true });
 }
 
-function showResults() {
+// ---------------------------------------------------------------------------
+// Leaderboard
+// ---------------------------------------------------------------------------
+const nameInput = document.getElementById('player-name');
+nameInput.maxLength = NAME_MAX;
+nameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveLeaderboardName();
+});
+let pendingLap = null; // { trackId, lapMs } waiting for the player's name
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+function renderLeaderboard(highlightRank = 0) {
+  const list = topTimes(TRACKS[settings.race.track].id);
+  const table = document.getElementById('board-table');
+  table.innerHTML =
+    '<tr><th>POS</th><th>DRIVER</th><th>BEST LAP</th><th>MODE</th><th>DATE</th></tr>' +
+    (list.length
+      ? list
+          .map((e, i) => {
+            const date = new Date(e.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+            return `<tr class="${i + 1 === highlightRank ? 'me' : ''}"><td>${i + 1}</td><td class="name">${escapeHtml(e.name)}</td><td>${formatTime(e.lapMs)}</td><td>${e.mode === 'trial' ? 'Time trial' : 'Race'}</td><td>${date}</td></tr>`;
+          })
+          .join('')
+      : '<tr><td class="empty" colspan="5">No times yet: finish a lap to get on the board.</td></tr>');
+}
+
+// After a run: ask for a name if the best lap makes the top 10, otherwise go straight to results.
+function finishRun() {
+  const trackId = TRACKS[settings.race.track].id;
+  const lapMs = race.player.bestLap;
+  const rank = rankFor(trackId, lapMs);
+  if (!rank) {
+    showResults(0);
+    return;
+  }
+  pendingLap = { trackId, lapMs };
   state = 'results';
   hud.show(false);
+  document.getElementById('name-info').textContent = `Best lap ${formatTime(lapMs)} · #${rank} on ${TRACKS[settings.race.track].name}`;
+  menus.show('screen-name', { reset: true });
+  nameInput.value = settings.player.name;
+  nameInput.focus();
+  nameInput.select();
+}
+
+function saveLeaderboardName() {
+  if (!pendingLap) return;
+  const name = cleanName(nameInput.value);
+  if (!name) {
+    toast('Type your name or gamer tag first (or choose Skip).', { error: true });
+    nameInput.focus();
+    return;
+  }
+  nameInput.blur();
+  settings.player.name = name;
+  saveSettings();
+  const rank = addEntry(pendingLap.trackId, { name, lapMs: pendingLap.lapMs, mode });
+  pendingLap = null;
+  audio.confirm();
+  showResults(rank);
+}
+
+// Two presses needed: the first arms the button, the second (within 4 s) wipes every track's board.
+let resetArmTimer = 0;
+function resetLeaderboard() {
+  const btn = document.getElementById('btn-reset-board');
+  if (!btn.classList.contains('armed')) {
+    btn.classList.add('armed');
+    btn.textContent = 'Press again to erase all times';
+    clearTimeout(resetArmTimer);
+    resetArmTimer = setTimeout(disarmReset, 4000);
+    return;
+  }
+  disarmReset();
+  clearLeaderboard();
+  settings.records = {};
+  saveSettings();
+  toast('Leaderboard and best laps cleared');
+}
+
+function disarmReset() {
+  clearTimeout(resetArmTimer);
+  const btn = document.getElementById('btn-reset-board');
+  btn.classList.remove('armed');
+  btn.textContent = 'Reset leaderboard';
+}
+
+function showResults(boardRank = 0) {
+  pendingLap = null;
+  state = 'results';
+  hud.show(false);
+  document.getElementById('results-board').textContent = boardRank
+    ? `Saved: #${boardRank} on the ${TRACKS[settings.race.track].name} leaderboard`
+    : '';
   const table = document.getElementById('results-table');
   const rows = race.standings();
   const trackId = TRACKS[settings.race.track].id;
@@ -264,6 +369,8 @@ function handleRaceEvents() {
       haptics.pulse(0.35 + k * 0.65, 70 + k * 160);
     } else if (ev.type === 'count') {
       haptics.pulse(0.5, 60);
+    } else if (ev.type === 'pickup') {
+      haptics.pulse(ev.kind === 'overdrive' ? 0.9 : 0.6, ev.kind === 'overdrive' ? 260 : 120);
     } else if (ev.type === 'go') {
       haptics.pulse(1, 320);
     } else if (ev.type === 'lap') {
@@ -287,7 +394,7 @@ function handleRaceEvents() {
       if (!audio.say(line)) audio.beep(880, 0.6, 0.25);
       haptics.pulse(0.9, 450);
     } else if (ev.type === 'results') {
-      showResults();
+      finishRun();
     }
   }
   race.events.length = 0;
@@ -593,7 +700,7 @@ function frame() {
       hud.set('pos', String(race.positionOf(player)));
       hud.set('posTotal', `/${race.cars.length}`);
       hud.drawSpeedo(player);
-      hud.drawMinimap(race.cars, player);
+      hud.drawMinimap(race.cars, player, race.pickups);
       hud.update(dt);
     }
   }

@@ -138,11 +138,16 @@ table.keys td:first-child { color: var(--accent-2); font-weight: 700; width: 48%
 .calib { width: min(560px, 100%); }
 .calib-step { font-size: 22px; font-weight: 700; line-height: 1.35; min-height: 90px; }
 
-#results-table { border-collapse: collapse; min-width: min(560px, 100%); background: var(--panel-solid); }
-#results-table td, #results-table th { padding: 10px 18px; border-bottom: 1px solid var(--line); text-align: left; }
-#results-table th { font-family: var(--font-display); font-size: 12px; letter-spacing: 0.2em; color: var(--dim); }
-#results-table tr.me td { color: var(--accent-2); font-weight: 700; }
-#results-table .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: middle; }
+table.board { border-collapse: collapse; min-width: min(560px, 100%); max-width: 100%; background: var(--panel-solid); }
+table.board td, table.board th { padding: 10px 18px; border-bottom: 1px solid var(--line); text-align: left; }
+table.board th { font-family: var(--font-display); font-size: 12px; letter-spacing: 0.2em; color: var(--dim); }
+table.board tr.me td { color: var(--accent-2); font-weight: 700; }
+table.board td.empty { color: var(--dim); text-align: center; }
+table.board .name { max-width: 14em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#board-table td:nth-child(3) { font-family: var(--font-display); font-size: 16px; font-variant-numeric: tabular-nums; }
+#screen-leaderboard .menu.wide { width: min(560px, 100%); }
+.mi.armed { background: rgba(255, 59, 47, 0.45); border-left-color: var(--accent); }
+table.board .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: middle; }
 
 /* ---------------- HUD ---------------- */
 #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
@@ -199,4 +204,5 @@ table.keys td:first-child { color: var(--accent-2); font-weight: 700; width: 48%
   .hud-tl { min-width: 150px; padding: 6px 10px; }
   .hud-huge { font-size: 36px; }
   #screen-title { padding: 24px 16px; }
+  table.board td, table.board th { padding: 8px 10px; }
 }

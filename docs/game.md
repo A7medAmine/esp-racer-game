@@ -33,6 +33,13 @@ firmware installer load from the internet, and both have fallbacks.
 | Alpine Ring | Twisty and technical, autumn forest |
 | Canyon Speedway | Fast desert speedway, flat-out sweepers |
 
+## Leaderboard
+
+Every track keeps a top 10 of the fastest laps, saved in the browser (localStorage, so it stays on that
+computer and browser). After a race or time trial, if your best lap makes the top 10, the game asks for
+your name or gamer tag (up to 16 characters, Enter to save, or Skip). Open **Leaderboard** from the title
+menu to see the board; tilt or use left / right on the Track row to switch tracks.
+
 Each track can be raced at **Day**, **Sunset** or **Night** (headlights, glowing lamps, stars).
 
 ## Controls
@@ -52,7 +59,19 @@ With a vibration motor wired (firmware 1.1+), the controller buzzes on crashes (
 buzz), when nitro kicks in, while it burns, on grass, on each countdown light, on GO and at the finish.
 
 Driving tips: the car slides when you take a corner too fast (tire smoke, lost speed), so brake before
-tight turns. Nitro refills slowly by itself and faster while drifting. Grass slows you down. Driving the
+tight turns. Nitro refills slowly by itself and faster while drifting. Grass slows you down.
+
+Nitro tokens float over the road (also shown on the minimap); drive through one to collect it. Every car can
+take them, and each comes back 10 seconds after it was taken:
+
+| Token | Effect |
+|---|---|
+| Blue (lightning bolt) | Fills the nitro tank. |
+| Gold (infinity sign) | Overdrive: unlimited nitro for 4 seconds, then nitro is locked for 5 seconds. |
+
+The nitro bar turns gold with a countdown during overdrive and red (LOCKED) during the lockout. Tune the
+durations with `overdriveTime` / `overdriveLock` in `TUNING`, and token spacing and respawn time at the top
+of `game/js/pickups.js`. Driving the
 wrong way for a few seconds puts you back on track automatically.
 
 ## Settings
@@ -60,10 +79,13 @@ wrong way for a few seconds puts you back on track automatically.
 - **Graphics quality**: High (shadows, 4x MSAA, full resolution), Medium, Low (for older laptops).
 - **Glow effects**: bloom on lights, nitro and the sky.
 - **Show FPS**: frame counter at the bottom.
-- **Volume**: master volume. Sounds are real recordings: a V8 idle blending into a high-rpm engine with
-  gear shifts, tire squeal, road roar (a dull rumble on grass), nitro, crashes and menu clicks.
+- **Volume**: master volume. Sounds are real recordings: a Lamborghini V12 (idle, mid and high rpm loops
+  blended by rpm) with gear shifts, exhaust pops when lifting off or shifting, tire squeal, road roar (a
+  dull rumble on grass), an afterburner-style nitro, crashes and menu clicks.
 - **Announcer**: male or female voice for the countdown, wrong way, final lap, new records and the finish; Off
   falls back to beeps.
+- **Reset leaderboard**: erases every track's leaderboard and best lap. Press it twice (the first press
+  asks for confirmation) within 4 seconds.
 
 ## Code map
 
@@ -76,12 +98,14 @@ game/
   js/vehicle.js         car physics (TUNING constants at the top)
   js/ai.js              AI drivers
   js/camera.js          chase / far / hood cameras, showroom orbit
+  js/pickups.js         nitro tokens (refill and overdrive): placement, pickup, respawn
   js/effects.js         smoke, dust, nitro flames, sparks, skid marks
   js/input/haptics.js   controller vibration: mixes pulses and rumbles into VIB commands
   js/audio.js           engine, effects and announcer (plays the recordings in assets/audio/)
   js/hud.js             speedometer, minimap, lap panel
   js/ui.js              menu navigation
   js/settings.js        saved settings and menu options
+  js/leaderboard.js     per-track top 10 of named best laps
   js/input/             controller.js (input mapping), serial.js (USB), wifi.js (WebSocket), protocol.js
   js/world/             tracks.js (track list), track.js (road geometry), environment.js (sky,
                         lighting, scenery), car-model.js (loads the GT3 RS, procedural fallback),

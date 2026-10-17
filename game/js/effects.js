@@ -232,6 +232,15 @@ export class Effects {
     }
   }
 
+  // Sparkle burst when a nitro token is collected.
+  burst(x, y, z, color) {
+    for (let k = 0; k < 40; k++) {
+      const a = Math.random() * Math.PI * 2, v = 4 + Math.random() * 6;
+      this.glow.emit(x, y, z, Math.cos(a) * v, (Math.random() - 0.2) * 6, Math.sin(a) * v,
+        { life: 0.4 + Math.random() * 0.3, size0: 0.5, size1: 0.05, alpha: 1, color, drag: 3 });
+    }
+  }
+
   update(dt) {
     this.smoke.update(dt);
     this.glow.update(dt);

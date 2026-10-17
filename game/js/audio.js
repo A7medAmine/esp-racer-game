@@ -3,19 +3,53 @@
 // human announcer. Only the wind and the fallback beeps are synthesized.
 
 const DIR = 'assets/audio/';
-const LOOPS = ['engine-idle', 'engine-high', 'skid', 'road', 'nitro'];
+// Engine: three loops of one Lamborghini V12, each flattened to a known firing frequency (Hz).
+// The game's engine runs from IDLE_HZ..REDLINE_HZ (rpm 0..1); each loop is pitched to that and
+// neighbouring loops crossfade over the middle XFADE share of the (log) gap between them.
+const ENGINE = [
+  { name: 'engine-idle', hz: 117 },
+  { name: 'engine-mid', hz: 400 },
+  { name: 'engine-high', hz: 570 },
+];
+const IDLE_HZ = 54, REDLINE_HZ = 680;
+const XFADE = 0.5;
+const POPS = 4; // exhaust pop takes
+
+const LOOPS = [...ENGINE.map((e) => e.name), 'skid', 'road', 'nitro'];
 const HIT_KINDS = ['heavy', 'medium', 'light']; // three takes of each
-const SHOTS = ['nitro-start', 'ui-move', 'ui-confirm', ...HIT_KINDS.flatMap((k) => [1, 2, 3].map((i) => `hit-${k}-${i}`))];
+const SHOTS = [
+  'nitro-start', 'ui-move', 'ui-confirm',
+  ...HIT_KINDS.flatMap((k) => [1, 2, 3].map((i) => `hit-${k}-${i}`)),
+  ...Array.from({ length: POPS }, (_, i) => `pop-${i + 1}`),
+];
 const VOICES = ['male', 'female'];
 const VOICE_LINES = ['3', '2', '1', 'go', 'final-round', 'new-record', 'you-win', 'you-lose', 'congratulations', 'wrong'];
 
-// Engine pitch. Each loop's firing frequency as recorded: the idle is a V8 at ~850 rpm, the
-// high loop a 4-cylinder near the redline. The game's engine runs from IDLE..REDLINE Hz and
-// crossfades from the idle loop to the high loop between XFADE_LO and XFADE_HI.
-const IDLE_LOOP_HZ = 57;
-const HIGH_LOOP_HZ = 87;
-const IDLE_HZ = 50, REDLINE_HZ = 130;
-const XFADE_LO = 60, XFADE_HI = 85;
+// Equal-power gains of the engine loops for a firing frequency in Hz.
+function engineMix(hz) {
+  const gains = ENGINE.map(() => 0);
+  if (hz <= ENGINE[0].hz) gains[0] = 1;
+  else if (hz >= ENGINE[ENGINE.length - 1].hz) gains[ENGINE.length - 1] = 1;
+  else {
+    let i = 0;
+    while (hz > ENGINE[i + 1].hz) i++;
+    const pos = Math.log(hz / ENGINE[i].hz) / Math.log(ENGINE[i + 1].hz / ENGINE[i].hz);
+    const mix = Math.min(1, Math.max(0, (pos - (1 - XFADE) / 2) / XFADE));
+    gains[i] = Math.cos((mix * Math.PI) / 2);
+    gains[i + 1] = Math.sin((mix * Math.PI) / 2);
+  }
+  return gains;
+}
+
+// Soft-clip curve for the engine's drive stage: adds grit and makes it sound louder.
+function driveCurve(k) {
+  const curve = new Float32Array(1024);
+  for (let i = 0; i < curve.length; i++) {
+    const x = (i / (curve.length - 1)) * 2 - 1;
+    curve[i] = Math.tanh(k * x) / Math.tanh(k);
+  }
+  return curve;
+}
 
 export class GameAudio {
   constructor() {
@@ -27,6 +61,10 @@ export class GameAudio {
     this.gear = 1;
     this.shiftUntil = 0;
     this.nitroWas = false;
+    this.throttleWas = 0;
+    this.rpm = 0;
+    this.popsUntil = 0; // exhaust keeps popping until then (after lifting off at high rpm)
+    this.nextPop = 0;
     this.voiceEnd = 0;
   }
 
@@ -69,20 +107,28 @@ export class GameAudio {
 
   startLoops() {
     const ctx = this.ctx;
-    // Engine: both loops share a lowpass that opens with throttle (on load) and closes when
+    // Engine: the loops share a lowpass that opens with throttle (on load) and closes when
     // coasting, so lifting off sounds like engine braking instead of a quieter full throttle.
+    // Then a low-end boost and a soft-clip drive stage for a meaner, hyper car bark.
     this.engineFilter = ctx.createBiquadFilter();
     this.engineFilter.type = 'lowpass';
     this.engineFilter.Q.value = 0.7;
+    const body = ctx.createBiquadFilter();
+    body.type = 'lowshelf';
+    body.frequency.value = 160;
+    body.gain.value = 5;
+    this.engineDrive = ctx.createGain(); // into the clipper: more drive, more grit
+    const clip = ctx.createWaveShaper();
+    clip.curve = driveCurve(2.5);
+    clip.oversample = '2x';
     this.engineBus = ctx.createGain();
     this.engineBus.gain.value = 0;
-    this.engineFilter.connect(this.engineBus).connect(this.sfx);
+    this.engineFilter.connect(body).connect(this.engineDrive).connect(clip).connect(this.engineBus).connect(this.sfx);
     this.roadFilter = ctx.createBiquadFilter();
     this.roadFilter.type = 'lowpass';
     this.roadFilter.frequency.value = 5000;
+    this.engine = ENGINE.map((e) => this.loopSample(e.name, this.engineFilter));
     this.loops = {
-      idle: this.loopSample('engine-idle', this.engineFilter),
-      high: this.loopSample('engine-high', this.engineFilter),
       skid: this.loopSample('skid', this.sfx),
       road: this.loopSample('road', this.roadFilter),
       nitro: this.loopSample('nitro', this.sfx),
@@ -155,6 +201,7 @@ export class GameAudio {
         for (const l of Object.values(L)) l.gain.setTargetAtTime(0, t, 0.1);
       }
       this.nitroWas = false;
+      this.popsUntil = 0;
       return;
     }
     const speed = Math.abs(car.forwardSpeed);
@@ -171,18 +218,36 @@ export class GameAudio {
     if (car.reversing) rpm = 0.1 + Math.min(1, speed / 14) * 0.5;
     if (speed < 1) rpm = 0.1 + car.throttle * 0.55; // idling or revving on the spot
     if (car.nitroActive) rpm = Math.min(1.08, rpm + 0.06);
-    if (gear > this.gear && car.throttle > 0.5) this.shiftUntil = t + 0.14; // lift during the shift
+    if (gear > this.gear && car.throttle > 0.5) {
+      this.shiftUntil = t + 0.12; // ignition cut during the shift, with a crack from the exhaust
+      this.pop(t + 0.02, 0.55);
+    }
     this.gear = gear;
     const load = t < this.shiftUntil ? 0 : car.throttle;
 
+    // Lifting off from high rpm: the exhaust crackles and pops for a moment.
+    if (this.throttleWas > 0.6 && car.throttle < 0.2 && this.rpm > 0.55 && speed > 10) {
+      this.popsUntil = t + 0.5 + Math.random() * 0.5;
+      this.nextPop = t + 0.05;
+    }
+    if (car.throttle > 0.3) this.popsUntil = 0;
+    if (t < this.popsUntil && t >= this.nextPop) {
+      this.pop(t, 0.25 + Math.random() * 0.3);
+      this.nextPop = t + 0.05 + Math.random() * 0.12;
+    }
+    this.throttleWas = car.throttle;
+    this.rpm = rpm;
+
     const hz = IDLE_HZ + rpm * (REDLINE_HZ - IDLE_HZ);
-    const mix = Math.min(1, Math.max(0, (hz - XFADE_LO) / (XFADE_HI - XFADE_LO)));
-    L.idle.rate.setTargetAtTime(hz / IDLE_LOOP_HZ, t, 0.04);
-    L.high.rate.setTargetAtTime(hz / HIGH_LOOP_HZ, t, 0.04);
-    L.idle.gain.setTargetAtTime(Math.cos((mix * Math.PI) / 2), t, 0.05);
-    L.high.gain.setTargetAtTime(Math.sin((mix * Math.PI) / 2), t, 0.05);
-    this.engineFilter.frequency.setTargetAtTime(900 + load * 5000 + rpm * 2000, t, 0.06);
-    this.engineBus.gain.setTargetAtTime(0.4 + load * 0.25 + rpm * 0.1, t, 0.06);
+    const gains = engineMix(hz);
+    this.engine.forEach((l, i) => {
+      l.rate.setTargetAtTime(hz / ENGINE[i].hz, t, 0.04);
+      l.gain.setTargetAtTime(gains[i], t, 0.05);
+    });
+    const boost = car.nitroActive ? 1 : 0;
+    this.engineFilter.frequency.setTargetAtTime(900 + load * 6000 + rpm * 2500 + boost * 3000, t, 0.06);
+    this.engineDrive.gain.setTargetAtTime(0.6 + load * 0.9 + boost * 0.6, t, 0.06);
+    this.engineBus.gain.setTargetAtTime(0.26 + load * 0.16 + rpm * 0.1 + boost * 0.06, t, 0.06);
 
     const screech = car.onGrass ? 0 : Math.min(1, Math.max(0, car.slip - 3) / 8) + (car.braking && speed > 15 ? 0.25 : 0);
     L.skid.gain.setTargetAtTime(Math.min(1, screech) * 0.5, t, 0.05);
@@ -193,9 +258,17 @@ export class GameAudio {
     L.road.rate.setTargetAtTime(0.75 + Math.min(0.5, speed / 120), t, 0.1);
     this.roadFilter.frequency.setTargetAtTime(car.onGrass ? 700 : 5000, t, 0.1);
 
-    L.nitro.gain.setTargetAtTime(car.nitroActive ? 0.45 : 0, t, car.nitroActive ? 0.06 : 0.25);
-    if (car.nitroActive && !this.nitroWas) this.play('nitro-start', { gain: 0.7 });
+    L.nitro.gain.setTargetAtTime(car.nitroActive ? 0.38 : 0, t, car.nitroActive ? 0.06 : 0.25);
+    L.nitro.rate.setTargetAtTime(0.9 + Math.min(0.25, speed / 300), t, 0.2);
+    if (car.nitroActive && !this.nitroWas) this.play('nitro-start', { gain: 0.6 });
+    if (!car.nitroActive && this.nitroWas) this.popsUntil = t + 0.4; // burnout crackle
     this.nitroWas = car.nitroActive;
+  }
+
+  // One exhaust bang (a random take, slightly detuned) at audio time `when`.
+  pop(when, gain) {
+    const n = 1 + Math.floor(Math.random() * POPS);
+    this.play(`pop-${n}`, { gain, rate: 0.85 + Math.random() * 0.3, when });
   }
 
   impact(strength) {
@@ -239,6 +312,12 @@ export class GameAudio {
 
   blip() {
     if (!this.play('ui-move', { gain: 0.6, dest: this.master })) this.beep(880, 0.05, 0.08);
+  }
+
+  // Nitro token collected: bright chime, a second higher one for overdrive.
+  pickup(kind) {
+    if (!this.play('ui-confirm', { gain: 0.9, rate: 1.25 })) this.beep(1320, 0.1, 0.15);
+    if (kind === 'overdrive' && this.ctx) this.play('ui-confirm', { gain: 0.8, rate: 1.7, when: this.ctx.currentTime + 0.09 });
   }
 
   confirm() {

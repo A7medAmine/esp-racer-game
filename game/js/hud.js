@@ -1,4 +1,7 @@
 // Heads-up display: lap/time panel, position, speedometer, minimap, messages.
+import { PICKUP_COLORS } from './pickups.js';
+import { TUNING } from './vehicle.js';
+
 export function formatTime(ms) {
   if (ms == null || !Number.isFinite(ms)) return '--';
   const m = Math.floor(ms / 60000);
@@ -99,11 +102,17 @@ export class Hud {
     return [x * this.mapScale + this.mapOx, z * this.mapScale + this.mapOz];
   }
 
-  drawMinimap(cars, player) {
+  drawMinimap(cars, player, pickups) {
     const ctx = this.mctx;
     const size = this.minimap.width;
     ctx.clearRect(0, 0, size, size);
     if (this.mapImage) ctx.drawImage(this.mapImage, 0, 0);
+    for (const it of pickups?.items ?? []) {
+      if (it.cooldown > 0) continue;
+      const [x, y] = this.mapPoint(it.x, it.z);
+      ctx.fillStyle = PICKUP_COLORS[it.kind];
+      ctx.fillRect(x - 2.5, y - 2.5, 5, 5);
+    }
     for (const car of [...cars].sort((a) => (a === player ? 1 : -1))) {
       const [x, y] = this.mapPoint(car.x, car.z);
       ctx.beginPath();
@@ -184,11 +193,24 @@ export class Hud {
     const ng = ctx.createLinearGradient(bx, 0, bx + bw, 0);
     ng.addColorStop(0, '#2a7bff');
     ng.addColorStop(1, '#38e1ff');
-    ctx.fillStyle = car.nitroActive ? '#ffffff' : ng;
-    ctx.fillRect(bx, by, bw * car.nitro, bh);
+    let label = 'NITRO';
+    if (car.overdrive > 0) {
+      // Unlimited: full gold bar that blinks faster as it runs out.
+      const blink = car.overdrive < 1.5 && Math.sin(performance.now() * 0.03) > 0;
+      ctx.fillStyle = blink ? '#ffffff' : PICKUP_COLORS.overdrive;
+      ctx.fillRect(bx, by, bw, bh);
+      label = `OVERDRIVE ${car.overdrive.toFixed(1)}`;
+    } else if (car.nitroLock > 0) {
+      ctx.fillStyle = 'rgba(255,59,47,0.75)';
+      ctx.fillRect(bx, by, bw * (car.nitroLock / TUNING.overdriveLock), bh);
+      label = `LOCKED ${Math.ceil(car.nitroLock)}`;
+    } else {
+      ctx.fillStyle = car.nitroActive ? '#ffffff' : ng;
+      ctx.fillRect(bx, by, bw * car.nitro, bh);
+    }
     ctx.font = '700 10px Orbitron, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('NITRO', cx, by + bh + 11);
+    ctx.fillStyle = car.nitroLock > 0 ? '#ff6b5f' : car.overdrive > 0 ? PICKUP_COLORS.overdrive : 'rgba(255,255,255,0.7)';
+    ctx.fillText(label, cx, by + bh + 11);
   }
 
   update(dt) {

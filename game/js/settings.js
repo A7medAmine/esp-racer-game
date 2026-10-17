@@ -102,6 +102,7 @@ const DEFAULTS = {
   graphics: { quality: 'high', bloom: true, showFps: false },
   audio: { volume: 0.6, voice: 'male' },
   wifiSetup: { mode: 'AP' },
+  player: { name: '' }, // last name typed for the leaderboard
   records: {},
 };
 

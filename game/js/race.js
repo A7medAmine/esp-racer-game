@@ -6,6 +6,7 @@ import { Environment, THEMES, TIMES } from './world/environment.js';
 import { createCarModel } from './world/car-model.js';
 import { Track } from './world/track.js';
 import { TRACKS } from './world/tracks.js';
+import { Pickups, PICKUP_COLORS } from './pickups.js';
 import { CAR_COLORS } from './settings.js';
 import { Vehicle } from './vehicle.js';
 
@@ -34,6 +35,8 @@ export class Race {
     this.timeCfg = TIMES[time];
     this.track = new Track(def, theme);
     this.scene.add(this.track.group);
+    this.pickups = new Pickups(this.track);
+    this.track.group.add(this.pickups.group); // disposed with the track
     this.env = new Environment({
       scene: this.scene,
       renderer: this.renderer,
@@ -221,6 +224,7 @@ export class Race {
       }
     }
     this.effects.update(dt);
+    this.pickups.update(dt);
     this.headlight.intensity = this.timeCfg.headlights * 90;
   }
 
@@ -236,6 +240,16 @@ export class Race {
         carInput = this.drivers[i - 1].input;
       }
       car.step(carInput, dt, now);
+      const token = this.pickups.check(car);
+      if (token) {
+        car.collect(token.kind);
+        this.effects.burst(token.x, 1.6, token.z, PICKUP_COLORS[token.kind]);
+        if (car === this.player) {
+          this.hud.message(token.kind === 'refill' ? 'NITRO REFILL' : 'OVERDRIVE!', 1.2);
+          this.audio.pickup(token.kind);
+          this.events.push({ type: 'pickup', kind: token.kind });
+        }
+      }
     }
     this.collideCars();
   }

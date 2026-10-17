@@ -18,6 +18,8 @@ export const TUNING = {
   nitroDrain: 0.3, // per second
   nitroRegen: 0.025,
   nitroDriftRegen: 0.14,
+  overdriveTime: 4, // seconds of unlimited nitro from an overdrive token
+  overdriveLock: 5, // seconds nitro is locked after overdrive ends
 };
 
 const HALF_WIDTH = 1.0;
@@ -59,6 +61,8 @@ export class Vehicle {
     this.onGrass = false;
     this.nitro = 0.6;
     this.nitroActive = false;
+    this.overdrive = 0; // seconds of unlimited nitro left
+    this.nitroLock = 0; // seconds until nitro can be used again
     this.braking = false;
     this.reversing = false;
     this.throttle = 0;
@@ -100,6 +104,16 @@ export class Vehicle {
     this.vx = this.vz = this.yawRate = 0;
   }
 
+  // A nitro token was collected (see pickups.js).
+  collect(kind) {
+    if (kind === 'refill') {
+      this.nitro = 1;
+    } else {
+      this.overdrive = TUNING.overdriveTime;
+      this.nitroLock = 0;
+    }
+  }
+
   get speed() {
     return Math.hypot(this.vx, this.vz);
   }
@@ -114,10 +128,20 @@ export class Vehicle {
     this.onGrass = off > ROAD_HALF_WIDTH + CURB_WIDTH + 0.3;
     const grip = (this.onGrass ? T.grassGrip : T.grip) * this.gripScale;
 
-    // Nitro
-    this.nitroActive = input.nitro && this.nitro > 0.01 && this.forwardSpeed > -1;
-    if (this.nitroActive) this.nitro = Math.max(0, this.nitro - T.nitroDrain * dt);
-    else this.nitro = Math.min(1, this.nitro + (T.nitroRegen + (this.slip > 4 ? T.nitroDriftRegen : 0)) * dt);
+    // Nitro. Overdrive burns without draining the tank, then locks nitro for a while.
+    if (this.overdrive > 0) {
+      this.overdrive -= dt;
+      if (this.overdrive <= 0) {
+        this.overdrive = 0;
+        this.nitroLock = T.overdriveLock;
+      }
+    } else if (this.nitroLock > 0) {
+      this.nitroLock = Math.max(0, this.nitroLock - dt);
+    }
+    const overdrive = this.overdrive > 0;
+    this.nitroActive = input.nitro && this.nitroLock <= 0 && (overdrive || this.nitro > 0.01) && this.forwardSpeed > -1;
+    if (this.nitroActive && !overdrive) this.nitro = Math.max(0, this.nitro - T.nitroDrain * dt);
+    else if (!this.nitroActive) this.nitro = Math.min(1, this.nitro + (T.nitroRegen + (this.slip > 4 ? T.nitroDriftRegen : 0)) * dt);
     const throttle = this.nitroActive ? 1 : input.throttle;
     this.throttle = throttle;
     let maxV = (this.nitroActive ? T.nitroMaxSpeed : T.maxSpeed) * this.speedScale;
